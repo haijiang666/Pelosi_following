@@ -1,0 +1,144 @@
+{
+  "source": "U.S. House Clerk \u2014 STOCK Act PTR",
+  "is_house_ptr": true,
+  "n_documents": 15,
+  "n_valid_documents": 15,
+  "all_valid": true,
+  "documents": [
+    {
+      "doc_id": "pelosi_ptr_20022260",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 3,
+      "filing_date": "2023-01-12",
+      "disclosure_date": "2023-01-12",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20022320",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2023-01-25",
+      "disclosure_date": "2023-01-25",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20022664",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2023-04-06",
+      "disclosure_date": "2023-04-06",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20023080",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2023-06-06",
+      "disclosure_date": "2023-06-06",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20023192",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2023-06-22",
+      "disclosure_date": "2023-06-22",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20024186",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2023-12-21",
+      "disclosure_date": "2023-12-21",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20024542",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2024-02-23",
+      "disclosure_date": "2024-02-23",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20024625",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2024-03-21",
+      "disclosure_date": "2024-03-21",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20025368",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 2,
+      "filing_date": "2024-07-02",
+      "disclosure_date": "2024-07-02",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20025535",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2024-07-30",
+      "disclosure_date": "2024-07-30",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20025819",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2024-09-11",
+      "disclosure_date": "2024-09-11",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20026590",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 2,
+      "filing_date": "2025-01-17",
+      "disclosure_date": "2025-01-17",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20030630",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2025-07-09",
+      "disclosure_date": "2025-07-09",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20033337",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 1,
+      "filing_date": "2025-10-24",
+      "disclosure_date": "2025-10-24",
+      "report_type": "house_ptr"
+    },
+    {
+      "doc_id": "pelosi_ptr_20033725",
+      "file_exists": true,
+      "status": "ok",
+      "pages": 3,
+      "filing_date": "2026-01-23",
+      "disclosure_date": "2026-01-23",
+      "report_type": "house_ptr"
+    }
+  ]
+}

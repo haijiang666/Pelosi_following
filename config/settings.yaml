@@ -1,0 +1,55 @@
+project_root: .
+
+paths:
+  raw_disclosures: data/raw/disclosures
+  raw_social: data/raw/social
+  raw_news: data/raw/news
+  processed: data/processed
+  prices: data/processed/prices
+  manual: data/manual
+
+person:
+  name: Nancy Pelosi
+  last_name: Pelosi
+  first_name: Nancy
+  office: "Representative, CA-11"
+  # Many trades are filed under spouse (Paul Pelosi) in PTR owner column.
+
+house:
+  index_base: https://disclosures-clerk.house.gov/public_disc/financial-pdfs
+  ptr_base: https://disclosures-clerk.house.gov/public_disc/ptr-pdfs
+  search_url: https://disclosures-clerk.house.gov/FinancialDisclosure/ViewMemberSearchResult
+  analysis_start_date: "2023-01-01"
+  analysis_end_date: "2026-05-30"
+  index_years: [2023, 2024, 2025, 2026]
+  filing_types: ["P"]   # P = Periodic Transaction Report (STOCK Act PTR)
+  # Empty = discover Nancy Pelosi PTR from annual XML index
+  filings: []
+
+price:
+  pre_window_days: 30
+  post_window_days: 90
+  benchmark_ticker: SPY
+
+event_study:
+  estimation_window: [-120, -21]
+  event_windows: [0, 1, 5, 20]
+
+backtest:
+  commission_bps: 5
+  slippage_bps: 10
+  follow_delay_days: 1
+
+social:
+  # Optional: Google News around Pelosi stock trades (no Truth Social for Pelosi).
+  match_posts_only: false
+  news_max_items: 20
+  news_rss_queries:
+    - "Nancy Pelosi stock"
+    - "Pelosi stock trade"
+    - "Paul Pelosi stock"
+    - "Pelosi STOCK Act disclosure"
+    - "Pelosi NVDA stock"
+    - "Pelosi call options"
+
+timezone: US/Eastern

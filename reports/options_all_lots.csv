@@ -1,0 +1,15 @@
+ticker,buy_trade_id,sell_trade_id,buy_date,sell_date,holding_days,buy_amount_min,sell_amount_min,match_status,contract_id
+AAPL,,a0edfa8aebd4,,2023-03-17,,,500001.0,prior_position,AAPL|call|80.0|na
+AAPL,,b71f78cfdfac,,2023-06-15,,,250001.0,prior_position,AAPL|call|80.0|na
+NVDA,d1a3ea6a4a6e,,2023-11-22,,,1000001.0,,open,NVDA|call|120.0|na
+NVDA,74393c088d91,,2023-11-22,,,1000001.0,,open,NVDA|call|None|na
+NVDA,ccb029ea2e15,,2025-01-14,,,250001.0,,open,NVDA|call|None|na
+PANW,738fa5f69dee,,2024-02-21,,,100001.0,,open,PANW|call|None|na
+AMZN,39d2decdea05,,2025-01-14,,,250001.0,,open,AMZN|call|None|na
+TEM,a2f94d843e08,,2025-01-14,,,50001.0,,open,TEM|call|None|na
+NVDA,,026500ab66a8,,2024-12-20,,,,prior_position,NVDA|call|12.0|na
+PANW,,4978ce80e3ed,,2024-12-20,,,,prior_position,PANW|call|100.0|na
+AVGO,,0c0651e1d22f,,2025-06-20,,,,prior_position,AVGO|call|80.0|na
+AMZN,,8fd4fc262d97,,2026-01-16,,,,prior_position,AMZN|call|150.0|na
+NVDA,,c14fb55a07de,,2026-01-16,,,,prior_position,NVDA|call|80.0|na
+VST,,db4291d826be,,2026-01-16,,,,prior_position,VST|call|50.0|na

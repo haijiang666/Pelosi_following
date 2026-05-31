@@ -1,0 +1,1322 @@
+{
+  "person": "Nancy Pelosi",
+  "source": "House STOCK Act PTR",
+  "total_rows_parsed": 35,
+  "tradable_with_ticker": 33,
+  "tradable_with_notional": 23,
+  "tradable_missing_amount": 10,
+  "unique_tickers": 13,
+  "date_range": [
+    "2023-03-09",
+    "2026-01-16"
+  ],
+  "disclosure_dates": [
+    "2023-04-06",
+    "2023-06-22",
+    "2023-12-21",
+    "2024-02-23",
+    "2024-07-02",
+    "2024-07-30",
+    "2025-01-17",
+    "2025-07-09",
+    "2026-01-23"
+  ],
+  "n_filings": 15,
+  "median_reveal_lag_days": 7.0,
+  "holding_stats": {
+    "n_matched_pairs": 9,
+    "median_holding_days": 359.0,
+    "mean_holding_days": 476.55555555555554,
+    "n_tickers_with_pairs": 5
+  },
+  "web_cross_check": [
+    {
+      "ticker": "AVGO",
+      "action": "sale",
+      "date": "2025-06-20",
+      "source": "July 2025 PTR (Matthews fund + AVGO)",
+      "found_in_parse": true,
+      "match_count": 1,
+      "sample_asset": "AVGO"
+    },
+    {
+      "ticker": "NVDA",
+      "action": "purchase",
+      "date": "2024-07-26",
+      "source": "July 2024 PTR",
+      "found_in_parse": true,
+      "match_count": 1,
+      "sample_asset": "NVIDIA Corporation - Common Stock"
+    },
+    {
+      "ticker": "AAPL",
+      "action": "purchase",
+      "date": "2023-03-17",
+      "source": "March 2023 PTR",
+      "found_in_parse": true,
+      "match_count": 1,
+      "sample_asset": "AAPL"
+    }
+  ],
+  "backtest_metrics": {
+    "mean_return_per_trade": 0.0196090434933036,
+    "median_return_per_trade": 0.0015941858246898127,
+    "portfolio_return_equal_weight": 0.19466709628830525,
+    "sharpe": 1.5022865781351022,
+    "max_drawdown": -0.013980292072220402,
+    "n_trades": 33,
+    "n_disclosure_days": 9,
+    "win_rate": 0.5151515151515151
+  },
+  "return_analysis": {
+    "pelosi_timing": [
+      {
+        "horizon_days": 1,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": -35807.322255156374,
+        "notional_weighted_return": -0.0015636369559609777,
+        "equal_weight_mean_return": 0.004622815381225721,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 3,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": 34273.14989184256,
+        "notional_weighted_return": 0.001496642596902307,
+        "equal_weight_mean_return": 0.010346119842654957,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 5,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": 290306.51751313126,
+        "notional_weighted_return": 0.012677127770270417,
+        "equal_weight_mean_return": 0.04298503235892174,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 10,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": 455351.49025500315,
+        "notional_weighted_return": 0.01988432458146453,
+        "equal_weight_mean_return": 0.03661985395796042,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 20,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": 831216.9277249243,
+        "notional_weighted_return": 0.036297645977251825,
+        "equal_weight_mean_return": 0.08299239955703235,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 30,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": 295748.59473479545,
+        "notional_weighted_return": 0.012914772825110065,
+        "equal_weight_mean_return": 0.04402035566792442,
+        "pct_of_all_notional": 1.0
+      }
+    ],
+    "pelosi_timing_buy": [
+      {
+        "horizon_days": 1,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": -35620.823543209604,
+        "notional_weighted_return": -0.0057919915849299185,
+        "equal_weight_mean_return": 0.0100547197231503,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 3,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 41813.84173266872,
+        "notional_weighted_return": 0.006798984283881793,
+        "equal_weight_mean_return": 0.02748845435676906,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 5,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 44618.51197186093,
+        "notional_weighted_return": 0.0072550272612205745,
+        "equal_weight_mean_return": 0.07440930910011699,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 10,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 31699.870731225325,
+        "notional_weighted_return": 0.005154439629839047,
+        "equal_weight_mean_return": 0.06268256011943756,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 20,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 183667.83195261017,
+        "notional_weighted_return": 0.02986462499390004,
+        "equal_weight_mean_return": 0.12850617589387156,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 30,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": -164741.59319531007,
+        "notional_weighted_return": -0.026787194302729127,
+        "equal_weight_mean_return": 0.03385213917994559,
+        "pct_of_all_notional": 1.0
+      }
+    ],
+    "pelosi_timing_sell": [
+      {
+        "horizon_days": 1,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": -186.4987119467778,
+        "notional_weighted_return": -1.1134244812198786e-05,
+        "equal_weight_mean_return": -0.002438660263276232,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 3,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": -7540.691840826165,
+        "notional_weighted_return": -0.0004501902888909419,
+        "equal_weight_mean_return": -0.011938915025693374,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 5,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": 245688.0055412704,
+        "notional_weighted_return": 0.014667931872355324,
+        "equal_weight_mean_return": 0.0021334725953679203,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 10,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": 423651.61952377774,
+        "notional_weighted_return": 0.025292618901348582,
+        "equal_weight_mean_return": 0.0027383359480401357,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 20,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": 647549.0957723141,
+        "notional_weighted_return": 0.03865962442842208,
+        "equal_weight_mean_return": 0.02382449031914139,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 30,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": 460490.18793010555,
+        "notional_weighted_return": 0.027491935105119672,
+        "equal_weight_mean_return": 0.05723903710229691,
+        "pct_of_all_notional": 1.0
+      }
+    ],
+    "follow_disclosure": [
+      {
+        "horizon_days": 1,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": -111227.61782209309,
+        "notional_weighted_return": -0.004857096336632199,
+        "equal_weight_mean_return": 0.02516529820517305,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 3,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": -284389.199328174,
+        "notional_weighted_return": -0.012418729855781106,
+        "equal_weight_mean_return": 0.035084996865369596,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 5,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": -262549.700807714,
+        "notional_weighted_return": -0.011465040921911477,
+        "equal_weight_mean_return": 0.023561307943440798,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 10,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": -707850.741825238,
+        "notional_weighted_return": -0.030910481697998208,
+        "equal_weight_mean_return": 0.04266658564507012,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 20,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": -6070.4462492276725,
+        "notional_weighted_return": -0.00026508472280694533,
+        "equal_weight_mean_return": 0.08963515376219539,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 30,
+        "n_trades": 23,
+        "total_notional": 22900023.0,
+        "total_pnl": 380652.10876457073,
+        "notional_weighted_return": 0.016622346133214397,
+        "equal_weight_mean_return": 0.042222385856710266,
+        "pct_of_all_notional": 1.0
+      }
+    ],
+    "follow_disclosure_buy": [
+      {
+        "horizon_days": 1,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 213231.934607204,
+        "notional_weighted_return": 0.03467178599577009,
+        "equal_weight_mean_return": 0.05128528819399872,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 3,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 177670.10050373606,
+        "notional_weighted_return": 0.028889386169384693,
+        "equal_weight_mean_return": 0.07392563757211038,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 5,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 116054.98578892896,
+        "notional_weighted_return": 0.018870689507311442,
+        "equal_weight_mean_return": 0.03767186092530467,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 10,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 108122.86221636648,
+        "notional_weighted_return": 0.01758091604300129,
+        "equal_weight_mean_return": 0.047760290475325304,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 20,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 477614.7603758632,
+        "notional_weighted_return": 0.07766077248549932,
+        "equal_weight_mean_return": 0.1369936647954036,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 30,
+        "n_trades": 13,
+        "total_notional": 6150013.0,
+        "total_pnl": 342336.6430829364,
+        "notional_weighted_return": 0.055664377145696504,
+        "equal_weight_mean_return": 0.03031839001562629,
+        "pct_of_all_notional": 1.0
+      }
+    ],
+    "follow_disclosure_sell": [
+      {
+        "horizon_days": 1,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": -324459.55242929707,
+        "notional_weighted_return": -0.019370707983415954,
+        "equal_weight_mean_return": -0.008790688780300333,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 3,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": -462059.2998319101,
+        "notional_weighted_return": -0.027585613371688144,
+        "equal_weight_mean_return": -0.015407836053393398,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 5,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": -378604.68659664295,
+        "notional_weighted_return": -0.022603251376962934,
+        "equal_weight_mean_return": 0.005217589067017806,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 10,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": -815973.6040416044,
+        "notional_weighted_return": -0.04871481294886418,
+        "equal_weight_mean_return": 0.03604476936573839,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 20,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": -483685.2066250908,
+        "notional_weighted_return": -0.028876711513908995,
+        "equal_weight_mean_return": 0.02806908941902473,
+        "pct_of_all_notional": 1.0
+      },
+      {
+        "horizon_days": 30,
+        "n_trades": 10,
+        "total_notional": 16750010.0,
+        "total_pnl": 38315.4656816343,
+        "notional_weighted_return": 0.002287489122790631,
+        "equal_weight_mean_return": 0.05769758045011945,
+        "pct_of_all_notional": 1.0
+      }
+    ],
+    "pnl_method_note": "Horizon PnL: purchase sign=+1, sale sign=-1 (disclosure-direction follow); see FIFO for matched long lots.",
+    "realized_fifo": {
+      "realized": {
+        "n_lots": 8,
+        "total_notional": 5250008.0,
+        "total_pnl": 3449447.809196459,
+        "nw_return": 0.6570366767434371,
+        "median_return_pct": 0.5735990260023018,
+        "median_holding_days": 362.5,
+        "win_rate": 1.0
+      },
+      "open_unrealized": {
+        "n_lots": 0,
+        "total_notional": 0.0,
+        "total_pnl": 0.0,
+        "nw_return": NaN
+      },
+      "mark_date": "2026-05-30",
+      "n_prior_sells": 3
+    }
+  },
+  "parse_rate_vs_table": 0.9215686274509803,
+  "amount_coverage_rate": 0.6595744680851063,
+  "parsed_with_amount": 31,
+  "per_document_stats": [
+    {
+      "doc_id": "pelosi_ptr_20022260",
+      "n_pdf_rows": 8,
+      "n_parsed_trades": 8,
+      "n_with_amount": 7
+    },
+    {
+      "doc_id": "pelosi_ptr_20022320",
+      "n_pdf_rows": 1,
+      "n_parsed_trades": 0,
+      "n_with_amount": 0
+    },
+    {
+      "doc_id": "pelosi_ptr_20022664",
+      "n_pdf_rows": 2,
+      "n_parsed_trades": 2,
+      "n_with_amount": 2
+    },
+    {
+      "doc_id": "pelosi_ptr_20023080",
+      "n_pdf_rows": 0,
+      "n_parsed_trades": 0,
+      "n_with_amount": 0
+    },
+    {
+      "doc_id": "pelosi_ptr_20023192",
+      "n_pdf_rows": 3,
+      "n_parsed_trades": 3,
+      "n_with_amount": 3
+    },
+    {
+      "doc_id": "pelosi_ptr_20024186",
+      "n_pdf_rows": 1,
+      "n_parsed_trades": 1,
+      "n_with_amount": 1
+    },
+    {
+      "doc_id": "pelosi_ptr_20024542",
+      "n_pdf_rows": 2,
+      "n_parsed_trades": 1,
+      "n_with_amount": 1
+    },
+    {
+      "doc_id": "pelosi_ptr_20024625",
+      "n_pdf_rows": 0,
+      "n_parsed_trades": 0,
+      "n_with_amount": 0
+    },
+    {
+      "doc_id": "pelosi_ptr_20025368",
+      "n_pdf_rows": 4,
+      "n_parsed_trades": 4,
+      "n_with_amount": 2
+    },
+    {
+      "doc_id": "pelosi_ptr_20025535",
+      "n_pdf_rows": 2,
+      "n_parsed_trades": 2,
+      "n_with_amount": 1
+    },
+    {
+      "doc_id": "pelosi_ptr_20025819",
+      "n_pdf_rows": 0,
+      "n_parsed_trades": 0,
+      "n_with_amount": 0
+    },
+    {
+      "doc_id": "pelosi_ptr_20026590",
+      "n_pdf_rows": 8,
+      "n_parsed_trades": 8,
+      "n_with_amount": 4
+    },
+    {
+      "doc_id": "pelosi_ptr_20030630",
+      "n_pdf_rows": 2,
+      "n_parsed_trades": 2,
+      "n_with_amount": 1
+    },
+    {
+      "doc_id": "pelosi_ptr_20033337",
+      "n_pdf_rows": 0,
+      "n_parsed_trades": 0,
+      "n_with_amount": 0
+    },
+    {
+      "doc_id": "pelosi_ptr_20033725",
+      "n_pdf_rows": 18,
+      "n_parsed_trades": 16,
+      "n_with_amount": 9
+    }
+  ],
+  "options_analysis": {
+    "stats": {
+      "n_filings": 15,
+      "parsed_options": 17,
+      "parsed_with_amount": 7,
+      "amount_coverage_rate": 0.4117647058823529
+    },
+    "n_tradable": 14,
+    "n_underlyings": 7,
+    "holding_stats": {},
+    "return_analysis": {
+      "timing": [
+        {
+          "horizon_days": 1,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 229740.13882457925,
+          "notional_weighted_return": 0.010628917367535523,
+          "equal_weight_mean_return": 0.005235922444044615,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 551408.7763856812,
+          "notional_weighted_return": 0.02551090266560873,
+          "equal_weight_mean_return": 0.025362221843502016,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 551251.0615974555,
+          "notional_weighted_return": 0.025503605997902922,
+          "equal_weight_mean_return": 0.07005280683850121,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 675473.240069475,
+          "notional_weighted_return": 0.03125073959392861,
+          "equal_weight_mean_return": 0.051591602912748356,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 1465164.7347502755,
+          "notional_weighted_return": 0.06778578168867049,
+          "equal_weight_mean_return": 0.1207365895865481,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 740474.752041969,
+          "notional_weighted_return": 0.03425803167207979,
+          "equal_weight_mean_return": 0.06253629082766109,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "timing_buy": [
+        {
+          "horizon_days": 1,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 229740.13882457925,
+          "notional_weighted_return": 0.010628917367535523,
+          "equal_weight_mean_return": 0.005235922444044615,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 551408.7763856812,
+          "notional_weighted_return": 0.02551090266560873,
+          "equal_weight_mean_return": 0.025362221843502016,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 551251.0615974555,
+          "notional_weighted_return": 0.025503605997902922,
+          "equal_weight_mean_return": 0.07005280683850121,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 675473.240069475,
+          "notional_weighted_return": 0.03125073959392861,
+          "equal_weight_mean_return": 0.051591602912748356,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 1465164.7347502755,
+          "notional_weighted_return": 0.06778578168867049,
+          "equal_weight_mean_return": 0.1207365895865481,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 740474.752041969,
+          "notional_weighted_return": 0.03425803167207979,
+          "equal_weight_mean_return": 0.06253629082766109,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "timing_sell": [],
+      "follow": [
+        {
+          "horizon_days": 1,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": 184091.8121698601,
+          "notional_weighted_return": 0.00826963793955669,
+          "equal_weight_mean_return": 0.03431130931872106,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": 677614.9672318392,
+          "notional_weighted_return": 0.030439324679260873,
+          "equal_weight_mean_return": 0.06977517380492619,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": -688350.8715535492,
+          "notional_weighted_return": -0.030921595132508112,
+          "equal_weight_mean_return": 0.03109778841049806,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": -949314.166647648,
+          "notional_weighted_return": -0.04264439768686969,
+          "equal_weight_mean_return": 0.035652834421384186,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": 1342561.9923154847,
+          "notional_weighted_return": 0.06030958931304753,
+          "equal_weight_mean_return": 0.14921669472374233,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": -329876.3425895637,
+          "notional_weighted_return": -0.01481846414507447,
+          "equal_weight_mean_return": 0.05992973508511568,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "realized_fifo": {
+        "realized": {
+          "n_lots": 0,
+          "total_notional": 0.0,
+          "total_pnl": 0.0,
+          "nw_return": NaN
+        },
+        "open_unrealized": {
+          "n_lots": 0,
+          "total_notional": 0.0,
+          "total_pnl": 0.0,
+          "nw_return": NaN
+        },
+        "mark_date": "2026-05-30",
+        "n_prior_sells": 8
+      }
+    },
+    "pnl_method_note": "Options: horizon PnL uses underlying stock price; purchase/exercise sign=+1, sale sign=\u22121. Not option contract mark-to-market."
+  },
+  "combined_analysis": {
+    "option_shares_per_contract": 100,
+    "pnl_method_note": "Combined book: stock notional = PTR amount_min; option notional = n_contracts \u00d7 100 \u00d7 underlying anchor price (fallback amount_min). Horizon return on underlying; buy/exercise +1, sale \u22121.",
+    "return_analysis": {
+      "timing_all": [
+        {
+          "horizon_days": 1,
+          "n_trades": 35,
+          "total_notional": 34514653.128601074,
+          "total_pnl": 164109.08775805112,
+          "notional_weighted_return": 0.004754765668557732,
+          "equal_weight_mean_return": 0.004961797811871166,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 35,
+          "total_notional": 34514653.128601074,
+          "total_pnl": 465790.0677024978,
+          "notional_weighted_return": 0.013495429490975068,
+          "equal_weight_mean_return": 0.0162586712934503,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 35,
+          "total_notional": 34514653.128601074,
+          "total_pnl": 556980.4514097284,
+          "notional_weighted_return": 0.016137506853521826,
+          "equal_weight_mean_return": 0.05464227502391794,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 35,
+          "total_notional": 34514653.128601074,
+          "total_pnl": 626916.1908166641,
+          "notional_weighted_return": 0.018163769123820655,
+          "equal_weight_mean_return": 0.0418216398304669,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 35,
+          "total_notional": 34514653.128601074,
+          "total_pnl": 1689400.4035756886,
+          "notional_weighted_return": 0.04894733831688843,
+          "equal_weight_mean_return": 0.09936403475779317,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 35,
+          "total_notional": 34514653.128601074,
+          "total_pnl": 852377.8990322684,
+          "notional_weighted_return": 0.02469611662780794,
+          "equal_weight_mean_return": 0.05289163342155526,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "timing_stock": [
+        {
+          "horizon_days": 1,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": -65631.05106652819,
+          "notional_weighted_return": -0.005087670094996604,
+          "equal_weight_mean_return": 0.004779048057088863,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": -85618.70868318345,
+          "notional_weighted_return": -0.006637098395667995,
+          "equal_weight_mean_return": 0.010189637593415818,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 5729.389812272911,
+          "notional_weighted_return": 0.0004441380221220501,
+          "equal_weight_mean_return": 0.0443685871475291,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": -48557.04925281092,
+          "notional_weighted_return": -0.003764106217564368,
+          "equal_weight_mean_return": 0.03530833110894592,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 224235.66882541298,
+          "notional_weighted_return": 0.017382581689240117,
+          "equal_weight_mean_return": 0.08511566487195653,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 111903.14699029949,
+          "notional_weighted_return": 0.008674648435866848,
+          "equal_weight_mean_return": 0.046461861817484705,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "timing_option": [
+        {
+          "horizon_days": 1,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 229740.13882457925,
+          "notional_weighted_return": 0.010628917367535523,
+          "equal_weight_mean_return": 0.005235922444044615,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 551408.7763856812,
+          "notional_weighted_return": 0.02551090266560873,
+          "equal_weight_mean_return": 0.025362221843502016,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 551251.0615974555,
+          "notional_weighted_return": 0.025503605997902922,
+          "equal_weight_mean_return": 0.07005280683850121,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 675473.240069475,
+          "notional_weighted_return": 0.03125073959392861,
+          "equal_weight_mean_return": 0.051591602912748356,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 1465164.7347502755,
+          "notional_weighted_return": 0.06778578168867049,
+          "equal_weight_mean_return": 0.1207365895865481,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 14,
+          "total_notional": 21614632.128601074,
+          "total_pnl": 740474.752041969,
+          "notional_weighted_return": 0.03425803167207979,
+          "equal_weight_mean_return": 0.06253629082766109,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "timing_buy": [
+        {
+          "horizon_days": 1,
+          "n_trades": 27,
+          "total_notional": 27764645.128601074,
+          "total_pnl": 194119.31528136967,
+          "notional_weighted_return": 0.006991600806790157,
+          "equal_weight_mean_return": 0.007556084096947352,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 27,
+          "total_notional": 27764645.128601074,
+          "total_pnl": 593222.61811835,
+          "notional_weighted_return": 0.021366115625488624,
+          "equal_weight_mean_return": 0.02638596342396393,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 27,
+          "total_notional": 27764645.128601074,
+          "total_pnl": 595869.5735693164,
+          "notional_weighted_return": 0.02146145109398484,
+          "equal_weight_mean_return": 0.0721503820015014,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 27,
+          "total_notional": 27764645.128601074,
+          "total_pnl": 707173.1108007004,
+          "notional_weighted_return": 0.025470273706910202,
+          "equal_weight_mean_return": 0.056931693419672774,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 27,
+          "total_notional": 27764645.128601074,
+          "total_pnl": 1648832.5667028856,
+          "notional_weighted_return": 0.05938604866245457,
+          "equal_weight_mean_return": 0.12447750151229643,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 27,
+          "total_notional": 27764645.128601074,
+          "total_pnl": 575733.158846659,
+          "notional_weighted_return": 0.020736197281829526,
+          "equal_weight_mean_return": 0.04872540299727956,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "timing_sell": [
+        {
+          "horizon_days": 1,
+          "n_trades": 8,
+          "total_notional": 6750008.0,
+          "total_pnl": -30010.22752331857,
+          "notional_weighted_return": -0.004445954363804986,
+          "equal_weight_mean_return": -0.0037939184002609714,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 8,
+          "total_notional": 6750008.0,
+          "total_pnl": -127432.55041585214,
+          "notional_weighted_return": -0.018878873982942263,
+          "equal_weight_mean_return": -0.017920939647033195,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 8,
+          "total_notional": 6750008.0,
+          "total_pnl": -38889.122159588005,
+          "notional_weighted_return": -0.005761344602789805,
+          "equal_weight_mean_return": -0.004447586025426206,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 8,
+          "total_notional": 6750008.0,
+          "total_pnl": -80256.91998403624,
+          "notional_weighted_return": -0.011889899979975763,
+          "equal_weight_mean_return": -0.009174791033102987,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 8,
+          "total_notional": 6750008.0,
+          "total_pnl": 40567.83687280289,
+          "notional_weighted_return": 0.006010042784068239,
+          "equal_weight_mean_return": 0.014606084461344643,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 8,
+          "total_notional": 6750008.0,
+          "total_pnl": 276644.7401856096,
+          "notional_weighted_return": 0.04098435737937046,
+          "equal_weight_mean_return": 0.0669526611034858,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "follow_all": [
+        {
+          "horizon_days": 1,
+          "n_trades": 35,
+          "total_notional": 35161190.53552246,
+          "total_pnl": 369994.60565906623,
+          "notional_weighted_return": 0.010522812226317253,
+          "equal_weight_mean_return": 0.031959607415946306,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 35,
+          "total_notional": 35161190.53552246,
+          "total_pnl": 731881.1936153454,
+          "notional_weighted_return": 0.02081502879932192,
+          "equal_weight_mean_return": 0.05290109807910254,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 35,
+          "total_notional": 35161190.53552246,
+          "total_pnl": -489682.9967195103,
+          "notional_weighted_return": -0.013926803650883094,
+          "equal_weight_mean_return": 0.03055778906073608,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 35,
+          "total_notional": 35161190.53552246,
+          "total_pnl": -444457.72809500445,
+          "notional_weighted_return": -0.012640576764486404,
+          "equal_weight_mean_return": 0.04922892969437972,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 35,
+          "total_notional": 35161190.53552246,
+          "total_pnl": 2077866.1464040978,
+          "notional_weighted_return": 0.05909544343513858,
+          "equal_weight_mean_return": 0.12282620437358506,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 35,
+          "total_notional": 35161190.53552246,
+          "total_pnl": 537921.8231131268,
+          "notional_weighted_return": 0.015298737469360658,
+          "equal_weight_mean_return": 0.0545017245085069,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "follow_stock": [
+        {
+          "horizon_days": 1,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 185902.79348920617,
+          "notional_weighted_return": 0.014411045802887157,
+          "equal_weight_mean_return": 0.030391806147429798,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 54266.22638350634,
+          "notional_weighted_return": 0.00420667736769625,
+          "equal_weight_mean_return": 0.041651714261886776,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 198667.87483403884,
+          "notional_weighted_return": 0.015400585381530685,
+          "equal_weight_mean_return": 0.030197789494228074,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 504856.4385526435,
+          "notional_weighted_return": 0.03913609431741572,
+          "equal_weight_mean_return": 0.05827965987637674,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 735304.1540886129,
+          "notional_weighted_return": 0.05700022923130225,
+          "equal_weight_mean_return": 0.10523254414014686,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 21,
+          "total_notional": 12900021.0,
+          "total_pnl": 867798.1657026906,
+          "notional_weighted_return": 0.06727106612482961,
+          "equal_weight_mean_return": 0.0508830507907677,
+          "pct_of_all_notional": 1.0
+        }
+      ],
+      "follow_option": [
+        {
+          "horizon_days": 1,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": 184091.8121698601,
+          "notional_weighted_return": 0.00826963793955669,
+          "equal_weight_mean_return": 0.03431130931872106,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 3,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": 677614.9672318392,
+          "notional_weighted_return": 0.030439324679260873,
+          "equal_weight_mean_return": 0.06977517380492619,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 5,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": -688350.8715535492,
+          "notional_weighted_return": -0.030921595132508112,
+          "equal_weight_mean_return": 0.03109778841049806,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 10,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": -949314.166647648,
+          "notional_weighted_return": -0.04264439768686969,
+          "equal_weight_mean_return": 0.035652834421384186,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 20,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": 1342561.9923154847,
+          "notional_weighted_return": 0.06030958931304753,
+          "equal_weight_mean_return": 0.14921669472374233,
+          "pct_of_all_notional": 1.0
+        },
+        {
+          "horizon_days": 30,
+          "n_trades": 14,
+          "total_notional": 22261169.53552246,
+          "total_pnl": -329876.3425895637,
+          "notional_weighted_return": -0.01481846414507447,
+          "equal_weight_mean_return": 0.05992973508511568,
+          "pct_of_all_notional": 1.0
+        }
+      ]
+    },
+    "n_timing_trades": 35,
+    "n_timing_stock": 21,
+    "n_timing_option": 14
+  },
+  "open_holdings": [
+    {
+      "ticker": "GOOGL",
+      "net_notional": 1000002.0,
+      "n_open_lots": 2,
+      "n_open_buys": 2,
+      "first_buy_date": "2025-12-30",
+      "latest_buy_date": "2026-01-16",
+      "days_held": 151,
+      "status": "\u4ecd\u6301\u6709",
+      "ret_1d": -0.0027083771406897516,
+      "pnl_1d": -1354.1912787220165,
+      "ret_3d": 0.008570981248132358,
+      "pnl_3d": 4285.499195047428,
+      "ret_5d": 0.025904050042604834,
+      "pnl_5d": 12952.05092535246,
+      "ret_10d": 0.07006527097442708,
+      "pnl_10d": 35032.70555248451,
+      "ret_20d": 0.07774406604727079,
+      "pnl_20d": 38872.11076770144,
+      "ret_30d": -0.01545333790405627,
+      "pnl_30d": -7726.684405366039
+    },
+    {
+      "ticker": "MSFT",
+      "net_notional": 500001.0,
+      "n_open_lots": 2,
+      "n_open_buys": 1,
+      "first_buy_date": "2023-06-15",
+      "latest_buy_date": "2023-06-15",
+      "days_held": 1080,
+      "status": "\u4ecd\u6301\u6709",
+      "ret_1d": -0.01657569081756572,
+      "pnl_1d": -8287.861984473679,
+      "ret_3d": -0.04176961727323016,
+      "pnl_3d": -20884.850406232355,
+      "ret_5d": -0.03757546071555622,
+      "pnl_5d": -18787.76793323883,
+      "ret_10d": -0.02171780662887633,
+      "pnl_10d": -10858.925032244793,
+      "ret_20d": -0.0068082015392065464,
+      "pnl_20d": -3404.1075778048125,
+      "ret_30d": -0.034989684896656915,
+      "pnl_30d": -17494.877438013355
+    },
+    {
+      "ticker": "NVDA",
+      "net_notional": 250001.0,
+      "n_open_lots": 2,
+      "n_open_buys": 1,
+      "first_buy_date": "2025-01-14",
+      "latest_buy_date": "2025-01-14",
+      "days_held": 501,
+      "status": "\u4ecd\u6301\u6709",
+      "ret_1d": 0.034001436946389296,
+      "pnl_1d": 8500.39323803427,
+      "ret_3d": 0.04515804440910387,
+      "pnl_3d": 11289.556260320376,
+      "ret_5d": 0.11619629957343405,
+      "pnl_5d": 29049.19108965809,
+      "ret_10d": -0.06117176004153753,
+      "pnl_10d": -15293.001182144424,
+      "ret_20d": -0.004705408613383805,
+      "pnl_20d": -1176.3568587545647,
+      "ret_30d": -0.08811467860893765,
+      "pnl_30d": -22028.757766913022
+    },
+    {
+      "ticker": "PANW",
+      "net_notional": 100001.0,
+      "n_open_lots": 1,
+      "n_open_buys": 1,
+      "first_buy_date": "2024-02-21",
+      "latest_buy_date": "2024-02-21",
+      "days_held": 829,
+      "status": "\u4ecd\u6301\u6709",
+      "ret_1d": 0.0223308244312567,
+      "pnl_1d": 2233.1047739501014,
+      "ret_3d": 0.15578118627488327,
+      "pnl_3d": 15578.274408674602,
+      "ret_5d": 0.20681754560949125,
+      "pnl_5d": 20681.961378494736,
+      "ret_10d": 0.06447297038652143,
+      "pnl_10d": 6447.361511622529,
+      "ret_20d": 0.07664994647745466,
+      "pnl_20d": 7665.071297691943,
+      "ret_30d": 0.01232969794738796,
+      "pnl_30d": 1232.9821244367433
+    },
+    {
+      "ticker": "TEM",
+      "net_notional": 50001.0,
+      "n_open_lots": 1,
+      "n_open_buys": 1,
+      "first_buy_date": "2025-01-14",
+      "latest_buy_date": "2025-01-14",
+      "days_held": 501,
+      "status": "\u4ecd\u6301\u6709",
+      "ret_1d": 0.09707817319025243,
+      "pnl_1d": 4854.005737685811,
+      "ret_3d": 0.10430416619951706,
+      "pnl_3d": 5215.312614142053,
+      "ret_5d": 0.5849827484720088,
+      "pnl_5d": 29249.722406348912,
+      "ret_10d": 0.5950361476423272,
+      "pnl_10d": 29752.402418264,
+      "ret_20d": 1.3210806607132382,
+      "pnl_20d": 66055.35411632262,
+      "ret_30d": 0.7373546770219978,
+      "pnl_30d": 36868.47120577691
+    }
+  ],
+  "portfolio_daily": {
+    "last_date": "2026-04-23",
+    "position_cost_end": 1650006.0,
+    "position_mtm_end": 2064477.880357014,
+    "cum_pnl_end": 3857850.4933045134,
+    "peak_mtm_date": "2024-12-24",
+    "peak_mtm": 7417131.478675738,
+    "n_days": 778
+  },
+  "unified_portfolio": {
+    "fifo": {
+      "n_matched_pairs": 9,
+      "median_holding_days": 405.0,
+      "mean_holding_days": 479.0,
+      "n_tickers_with_pairs": 5,
+      "n_matched_from_option": 5,
+      "n_matched_from_stock": 4,
+      "n_prior_sells": 3,
+      "n_open_lots": 18
+    },
+    "daily": {
+      "last_date": "2026-04-23",
+      "position_cost_end": 22744771.010864258,
+      "position_mtm_end": 29475254.893699527,
+      "cum_pnl_end": 12330779.820296234,
+      "peak_mtm_date": "2025-11-03",
+      "peak_mtm": 34300662.70309824,
+      "n_days": 778
+    }
+  }
+}

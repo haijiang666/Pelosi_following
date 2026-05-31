@@ -1,0 +1,29 @@
+[
+  {
+    "ticker": "AVGO",
+    "action": "sale",
+    "date": "2025-06-20",
+    "source": "July 2025 PTR (Matthews fund + AVGO)",
+    "found_in_parse": true,
+    "match_count": 1,
+    "sample_asset": "AVGO"
+  },
+  {
+    "ticker": "NVDA",
+    "action": "purchase",
+    "date": "2024-07-26",
+    "source": "July 2024 PTR",
+    "found_in_parse": true,
+    "match_count": 1,
+    "sample_asset": "NVIDIA Corporation - Common Stock"
+  },
+  {
+    "ticker": "AAPL",
+    "action": "purchase",
+    "date": "2023-03-17",
+    "source": "March 2023 PTR",
+    "found_in_parse": true,
+    "match_count": 1,
+    "sample_asset": "AAPL"
+  }
+]

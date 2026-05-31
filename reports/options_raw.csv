@@ -1,0 +1,61 @@
+trade_id,person,doc_id,txn_num,owner,asset_name,action,transaction_date,disclosure_date,amount_min,amount_max,asset_class,ticker,underlying,option_type,n_contracts,strike,expiration,contract_id,description,source_doc
+a0edfa8aebd4,Nancy Pelosi,pelosi_ptr_20022664,1,SP,SP Apple Inc.,exercise,2023-03-17,2023-04-06,500001.0,1000000.0,option,AAPL,AAPL,call,100.0,80.0,,AAPL|call|80.0|na,"SP Apple Inc. (AAPL) [ST] P 03/17/2023 03/17/2023 $500,001 -
+$1,000,000
+F S: New
+D: Exercised 100 call options purchased 5/13/22 (10,000 shares) at a strike price of $80 with an expiration date
+of 3/17/23.",pelosi_ptr_20022664.pdf
+b71f78cfdfac,Nancy Pelosi,pelosi_ptr_20023192,1,SP,SP Apple Inc.,exercise,2023-06-15,2023-06-22,250001.0,500000.0,option,AAPL,AAPL,call,50.0,80.0,,AAPL|call|80.0|na,"SP Apple Inc. (AAPL) [ST] P 06/15/2023 06/15/2023 $250,001 -
+$500,000
+F S: New
+D: Exercised 50 call options purchased 5/24/22 (5,000 shares) at a strike price of $80 with an expiration date of
+6/16/23.",pelosi_ptr_20023192.pdf
+d1a3ea6a4a6e,Nancy Pelosi,pelosi_ptr_20024186,1,SP,SP NVIDIA Corporation,purchase,2023-11-22,2023-12-21,1000001.0,5000000.0,option,NVDA,NVDA,call,50.0,120.0,,NVDA|call|120.0|na,"SP NVIDIA Corporation (NVDA) [OP] P 11/22/2023 11/22/2023 $1,000,001 -
+$5,000,000
+F S: New
+D: Purchased 50 call options with a strike price of $120 and an expiration date of 12/20/24.",pelosi_ptr_20024186.pdf
+74393c088d91,Nancy Pelosi,pelosi_ptr_20024186,2,,SP NVIDIA Corporation,purchase,2023-11-22,2023-12-21,1000001.0,5000000.0,option,NVDA,NVDA,call,,,,NVDA|call|None|na,"SP NVIDIA Corporation (NVDA) [OP] P 11/22/2023 11/22/2023 $1,000,001 -",pelosi_ptr_20024186.pdf
+738fa5f69dee,Nancy Pelosi,pelosi_ptr_20024542,1,SP,"SP Palo Alto Networks, Inc.",purchase,2024-02-21,2024-02-23,100001.0,250000.0,option,PANW,PANW,call,,,,PANW|call|None|na,"SP Palo Alto Networks, Inc. (PANW)
+[OP] P 02/21/2024 02/21/2024 $100,001 -
+$250,000",pelosi_ptr_20024542.pdf
+39d2decdea05,Nancy Pelosi,pelosi_ptr_20026590,1,SP,"SP Amazon.com, Inc. - Common Stock",purchase,2025-01-14,2025-01-17,250001.0,500000.0,option,AMZN,AMZN,call,,,,AMZN|call|None|na,"SP Amazon.com, Inc. - Common Stock
+(AMZN) [OP] P 01/14/2025 01/14/2025 $250,001 -
+$500,000",pelosi_ptr_20026590.pdf
+ccb029ea2e15,Nancy Pelosi,pelosi_ptr_20026590,3,SP,"SP NVIDIA Corporation - Common
+Stock",purchase,2025-01-14,2025-01-17,250001.0,500000.0,option,NVDA,NVDA,call,,,,NVDA|call|None|na,"SP NVIDIA Corporation - Common
+Stock (NVDA) [OP] P 01/14/2025 01/14/2025 $250,001 -
+$500,000",pelosi_ptr_20026590.pdf
+a2f94d843e08,Nancy Pelosi,pelosi_ptr_20026590,5,SP,"SP Tempus AI, Inc. - Class A Common
+Stock",purchase,2025-01-14,2025-01-17,50001.0,100000.0,option,TEM,TEM,call,,,,TEM|call|None|na,"SP Tempus AI, Inc. - Class A Common
+Stock (TEM) [OP] P 01/14/2025 01/14/2025 $50,001 -
+$100,000",pelosi_ptr_20026590.pdf
+026500ab66a8,Nancy Pelosi,pelosi_ptr_20026590,2,SP,"SP NVIDIA Corporation - Common P 12/20/2024 12/20/2024 $500,001 -
+Stock",exercise,2024-12-20,2025-01-17,,,option,NVDA,NVDA,call,500.0,12.0,,NVDA|call|12.0|na,"SP NVIDIA Corporation - Common P 12/20/2024 12/20/2024 $500,001 -
+Stock (NVDA) [ST] $1,000,000
+F S: New
+D: Exercised 500 call options purchased 11/22/23 (50,000 shares) at a strike price of $12 with an expiration date
+of 12/20/24.",pelosi_ptr_20026590.pdf
+4978ce80e3ed,Nancy Pelosi,pelosi_ptr_20026590,4,SP,"SP Palo Alto Networks, Inc.",exercise,2024-12-20,2025-01-17,,,option,PANW,PANW,call,140.0,100.0,,PANW|call|100.0|na,"SP Palo Alto Networks, Inc. (PANW) P 12/20/2024 12/20/2024 $1,000,001 -
+[ST] $5,000,000
+F S: New
+D: Exercised 140 call options purchased 2/12/24 & 2/21/24 (14,000 shares) at a strike price of $100 with an
+expiration date of 12/20/24.",pelosi_ptr_20026590.pdf
+0c0651e1d22f,Nancy Pelosi,pelosi_ptr_20030630,1,SP,"SP Broadcom Inc. - Common Stock P 06/20/2025 06/20/2025 $1,000,001 -",exercise,2025-06-20,2025-07-09,,,option,AVGO,AVGO,call,200.0,80.0,,AVGO|call|80.0|na,"SP Broadcom Inc. - Common Stock P 06/20/2025 06/20/2025 $1,000,001 -
+(AVGO) [ST] $5,000,000
+F S: New
+D: Exercised 200 call options purchased 6/24/24 (20,000 shares) at a strike price of $80 with an expiration date
+of 6/20/25.",pelosi_ptr_20030630.pdf
+8fd4fc262d97,Nancy Pelosi,pelosi_ptr_20033725,1,SP,"SP Amazon.com, Inc. - Common Stock P 01/16/2026 01/16/2026 $500,001 -",exercise,2026-01-16,2026-01-23,,,option,AMZN,AMZN,call,50.0,150.0,,AMZN|call|150.0|na,"SP Amazon.com, Inc. - Common Stock P 01/16/2026 01/16/2026 $500,001 -
+(AMZN) [ST] $1,000,000
+F S: New
+D: Exercised 50 call options purchased 1/14/25 (5,000 shares) at a strike price of $150 with an expiration date of
+1/16/26.",pelosi_ptr_20033725.pdf
+c14fb55a07de,Nancy Pelosi,pelosi_ptr_20033725,2,SP,"SP NVIDIA Corporation - Common Stock P 01/16/2026 01/16/2026 $250,001 -",exercise,2026-01-16,2026-01-23,,,option,NVDA,NVDA,call,50.0,80.0,,NVDA|call|80.0|na,"SP NVIDIA Corporation - Common Stock P 01/16/2026 01/16/2026 $250,001 -
+(NVDA) [ST] $500,000
+F S: New
+D: Exercised 50 call options purchased 1/14/25 (5,000 shares) at a strike price of $80 with an expiration date of
+1/16/26.",pelosi_ptr_20033725.pdf
+db4291d826be,Nancy Pelosi,pelosi_ptr_20033725,4,SP,SP Vistra Corp. Common Stock,exercise,2026-01-16,2026-01-23,,,option,VST,VST,call,50.0,50.0,,VST|call|50.0|na,"SP Vistra Corp. Common Stock (VST) P 01/16/2026 01/16/2026 $100,001 -
+[ST] $250,000
+F S: New
+D: Exercised 50 call options purchased 1/14/25 (5,000 shares) at a strike price of $50 with an expiration date of
+1/16/26.",pelosi_ptr_20033725.pdf

@@ -1,0 +1,13 @@
+ticker,n_matched_pairs,n_open_buys,n_prior_sells,n_matched_from_option,avg_holding_days,median_holding_days
+NVDA,4,6,0,2,483.75,478.5
+AAPL,2,2,0,1,1016.0,1016.0
+AVGO,1,0,0,1,0.0,0.0
+AMZN,1,2,0,1,344.0,344.0
+GOOGL,1,1,0,0,0.0,0.0
+DIS,0,0,1,0,,
+MSFT,0,1,0,0,,
+PANW,0,3,0,0,,
+PYPL,0,0,1,0,,
+TEM,0,2,0,0,,
+V,0,0,1,0,,
+VST,0,1,0,0,,
