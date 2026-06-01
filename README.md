@@ -11,7 +11,13 @@
 | GitHub Pages | https://haijiang666.github.io/Pelosi_following/ |
 | jsDelivr（单文件） | https://cdn.jsdelivr.net/gh/haijiang666/Pelosi_following@main/docs/index.html |
 
-首次推送后请在仓库 **Settings → Pages → Build from branch `main`，folder `/docs`** 开启 Pages。
+若 https://haijiang666.github.io/Pelosi_following/ 显示 404，说明尚未开启 Pages。任选其一：
+
+1. **网页**：仓库 [Settings → Pages](https://github.com/haijiang666/Pelosi_following/settings/pages) → **Deploy from a branch** → `main` → **`/docs`** → Save  
+2. **脚本**：`export GITHUB_TOKEN=ghp_xxx && bash scripts/enable_github_pages.sh`  
+3. **Actions**：Settings → Pages → Source 选 **GitHub Actions**（推送后自动跑 `.github/workflows/deploy-pages.yml`）
+
+等 1–3 分钟再刷新。
 
 ## 快速开始
 

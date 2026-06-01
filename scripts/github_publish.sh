@@ -67,6 +67,14 @@ git -c credential.helper='!f() { echo "username=${USER}"; echo "password=${GITHU
   push -u origin main
 
 echo ""
+echo "Enabling GitHub Pages (main /docs) ..."
+if bash "$(dirname "$0")/enable_github_pages.sh"; then
+  :
+else
+  echo "Pages enable skipped or failed — run: bash scripts/enable_github_pages.sh"
+fi
+
+echo ""
 echo "Done: https://github.com/${USER}/${REPO}"
-echo "Enable GitHub Pages: Settings → Pages → Build from branch main, folder /docs"
 echo "Report URL: https://${USER}.github.io/${REPO}/"
+echo "Mobile: reports/FINAL_REPORT.mobile.html"
