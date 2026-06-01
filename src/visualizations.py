@@ -1,4 +1,4 @@
-"""Generate analysis charts for Trump equity trade reports."""
+"""Generate analysis charts for Pelosi House PTR equity/options reports."""
 
 from __future__ import annotations
 
@@ -43,10 +43,10 @@ def _mpl_label(s: str) -> str:
     return s.replace("$", r"\$")
 
 
-def _with_notional(trades: pd.DataFrame, trump_df: pd.DataFrame | None = None) -> pd.DataFrame:
+def _with_notional(trades: pd.DataFrame, pelosi_df: pd.DataFrame | None = None) -> pd.DataFrame:
     df = trades.copy()
-    if trump_df is not None and "notional" in trump_df.columns and "trade_id" in trump_df.columns:
-        nmap = trump_df.drop_duplicates("trade_id").set_index("trade_id")["notional"]
+    if pelosi_df is not None and "notional" in pelosi_df.columns and "trade_id" in pelosi_df.columns:
+        nmap = pelosi_df.drop_duplicates("trade_id").set_index("trade_id")["notional"]
         if "trade_id" in df.columns:
             df["notional"] = df["trade_id"].map(nmap)
         else:
@@ -136,10 +136,10 @@ def _annotate_top_tickers(
 def plot_trade_volume_monthly(
     trades: pd.DataFrame,
     out_dir: Path,
-    trump_df: pd.DataFrame | None = None,
+    pelosi_df: pd.DataFrame | None = None,
 ) -> Path:
     """Timeline of trade count + notional (day/week); top-3 trades labeled per bar."""
-    df = _with_notional(trades, trump_df)
+    df = _with_notional(trades, pelosi_df)
     df = df[df["action"].isin(["purchase", "sale"])].copy()
     gran, gran_label = _pick_granularity(df["transaction_date"])
     df["_period"] = _period_start(df["transaction_date"], gran)
@@ -216,7 +216,7 @@ def plot_reveal_lag(returns_df: pd.DataFrame, out_dir: Path) -> Path:
     lag = returns_df["reveal_lag_days"].dropna()
     ax.hist(lag, bins=40, color="#3498db", edgecolor="white")
     ax.axvline(lag.median(), color="#e67e22", ls="--", label=f"Median {lag.median():.0f}d")
-    ax.set_title("Reveal Lag: Transaction → OGE Disclosure")
+    ax.set_title("Reveal Lag: Transaction → House PTR Disclosure")
     ax.set_xlabel("Days")
     ax.set_ylabel("Trades")
     ax.legend()
@@ -237,13 +237,13 @@ def plot_top_tickers(
             .sum()
             .nlargest(n)
         )
-        title = f"Top {n} Tickers by Trump Notional (amount_min)"
+        title = f"Top {n} Tickers by Pelosi Notional (amount_min)"
         xlabel = "Notional ($)"
     else:
         df = trades[trades["ticker"].notna()].copy()
         df["notional"] = df.apply(trade_notional, axis=1)
         top = df.groupby("ticker")["notional"].sum().nlargest(n)
-        title = f"Top {n} Tickers by Trump Notional (amount_min)"
+        title = f"Top {n} Tickers by Pelosi Notional (amount_min)"
         xlabel = "Notional ($)"
     fig, ax = plt.subplots(figsize=(8, 5))
     top.sort_values().plot(kind="barh", ax=ax, color="#9b59b6")
@@ -253,69 +253,106 @@ def plot_top_tickers(
     return _save(fig, out_dir, "03_top_tickers")
 
 
-def _buy_sell_pie_frame(trades: pd.DataFrame, trump_df: pd.DataFrame | None = None) -> pd.DataFrame:
-    """Buy = purchase + exercise; sell = sale; both sides included in pies."""
-    df = _with_notional(trades, trump_df)
+def _buy_sell_pie_frame(trades: pd.DataFrame, instrument: str) -> pd.DataFrame:
+    """Raw PTR rows for pie charts; notional from pie_notional (not horizon timing table)."""
+    if trades is None or trades.empty:
+        return pd.DataFrame()
+    df = trades[trades["action"].isin(list(BUY_ACTIONS) + ["sale"])].copy()
     if df.empty:
         return df
-    df = df[df["action"].isin(list(BUY_ACTIONS) + ["sale"])].copy()
+    df["instrument"] = instrument
     df["side"] = df["action"].map(lambda a: trade_side(str(a)))
-    if "notional" not in df.columns or df["notional"].isna().all():
-        df["notional"] = df.apply(pie_notional, axis=1)
-    else:
-        missing = df["notional"].isna()
-        if missing.any():
-            df.loc[missing, "notional"] = df.loc[missing].apply(pie_notional, axis=1)
-    return df.dropna(subset=["notional"])
+    df["segment"] = df["instrument"] + "_" + df["side"]
+    df["notional"] = df.apply(pie_notional, axis=1)
+    df["transaction_date"] = pd.to_datetime(df["transaction_date"], errors="coerce")
+    return df
 
 
-def plot_buy_sell(trades: pd.DataFrame, out_dir: Path, trump_df: pd.DataFrame | None = None) -> Path:
-    df = _buy_sell_pie_frame(trades, trump_df)
-    actions = ["purchase", "sale"]
-    if not df.empty and "side" in df.columns:
-        count = df.groupby("side").size().reindex(actions, fill_value=0)
-        notional = df.groupby("side")["notional"].sum().reindex(actions, fill_value=0)
-    else:
-        count = pd.Series({a: 0 for a in actions})
-        notional = pd.Series({a: 0.0 for a in actions})
+_BUY_SELL_SEGMENTS: list[tuple[str, str, str, str]] = [
+    ("stock", "purchase", "Stock Buy", "#27ae60"),
+    ("stock", "sale", "Stock Sell", "#c0392b"),
+    ("option", "purchase", "Option Buy\n(incl. exercise)", "#2ecc71"),
+    ("option", "sale", "Option Sell", "#e74c3c"),
+]
 
-    total_n = notional.sum()
-    total_c = count.sum()
 
-    fig, axes = plt.subplots(1, 2, figsize=(6.8, 3.0))
-    colors = [_ACTION_COLORS[a] for a in actions]
-    labels = [_ACTION_LABELS[a] for a in actions]
+def _segment_summary(df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+    """Count all rows per segment; notional sums (NaN → 0 for pie)."""
+    keys = [f"{inst}_{side}" for inst, side, _, _ in _BUY_SELL_SEGMENTS]
+    if df.empty:
+        z = pd.Series(0, index=keys)
+        return z, z.astype(float)
+    counts = df.groupby("segment", observed=True).size()
+    notionals = df.groupby("segment", observed=True)["notional"].sum(min_count=1).fillna(0.0)
+    count = counts.reindex(keys, fill_value=0)
+    notional = notionals.reindex(keys, fill_value=0.0)
+    return count, notional
 
-    def _pie(ax, values, title: str) -> None:
-        vals = values.values.astype(float)
-        if vals.sum() <= 0:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-            ax.axis("off")
-            return
 
-        def _autopct(pct: float) -> str:
-            val = pct / 100.0 * vals.sum()
-            if title.startswith("Notional"):
-                return _mpl_label(f"{pct:.1f}%\n{_fmt_notional_short(val)}")
-            return f"{pct:.1f}%\n{int(round(val)):,}"
+def _segment_labels() -> list[str]:
+    return [lbl.replace("\n", " ") for _, _, lbl, _ in _BUY_SELL_SEGMENTS]
 
-        ax.pie(vals, labels=labels, autopct=_autopct, colors=colors, startangle=90, textprops={"fontsize": 8})
-        ax.set_title(_mpl_label(title), fontsize=10, pad=8)
 
-    _pie(axes[0], count, f"By count ({total_c:,} trades)")
-    _pie(axes[1], notional, f"By notional ({_fmt_notional_short(total_n)})")
-    fig.suptitle(
-        _mpl_label(
-            "Buy vs Sell · "
-            + " · ".join(
-                f"{_ACTION_LABELS[a]}: {int(count[a]):,} trades / {_fmt_notional_short(notional[a])}"
-                for a in actions
+def _segment_colors() -> list[str]:
+    return [c for *_, c in _BUY_SELL_SEGMENTS]
+
+
+def _bar_four_segments(
+    ax,
+    values: pd.Series,
+    *,
+    by_count: bool,
+    xlabel: str,
+) -> None:
+    """Horizontal bars for four segments; always show buy + sell rows (zero allowed)."""
+    labels = _segment_labels()
+    colors = _segment_colors()
+    vals = values.reindex([f"{inst}_{side}" for inst, side, _, _ in _BUY_SELL_SEGMENTS], fill_value=0.0)
+    y = np.arange(len(labels))
+    widths = vals.values.astype(float)
+    total = float(widths.sum())
+    bars = ax.barh(y, widths, color=colors, edgecolor="white", height=0.62)
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=9)
+    ax.set_xlabel(xlabel)
+    ax.invert_yaxis()
+    ax.grid(axis="x", alpha=0.25)
+    for bar, v in zip(bars, widths):
+        if v <= 0:
+            ax.text(
+                0.01 * (ax.get_xlim()[1] or 1),
+                bar.get_y() + bar.get_height() / 2,
+                "0",
+                va="center",
+                ha="left",
+                fontsize=8,
+                color="#7f8c8d",
             )
-        ),
-        fontsize=9,
-        y=1.02,
-    )
-    return _save(fig, out_dir, "04_buy_sell")
+            continue
+        pct = v / total * 100 if total > 0 else 0
+        label = f"{int(round(v)):,}" if by_count else _fmt_notional_short(v)
+        ax.text(
+            bar.get_width(),
+            bar.get_y() + bar.get_height() / 2,
+            _mpl_label(f" {label} ({pct:.0f}%)"),
+            va="center",
+            ha="left",
+            fontsize=8,
+        )
+    if total > 0:
+        ax.set_xlim(0, max(widths) * 1.28)
+
+
+def plot_buy_sell(
+    trades: pd.DataFrame,
+    out_dir: Path,
+    pelosi_df: pd.DataFrame | None = None,
+    instrument: str = "stock",
+) -> Path:
+    del pelosi_df
+    if instrument == "option":
+        return plot_combined_buy_sell(None, trades, out_dir)
+    return plot_combined_buy_sell(trades, None, out_dir)
 
 
 def plot_combined_buy_sell(
@@ -325,67 +362,43 @@ def plot_combined_buy_sell(
     stock_timing: pd.DataFrame | None = None,
     option_timing: pd.DataFrame | None = None,
 ) -> Path:
-    """Stock + options: buy (purchase/exercise) vs sell, count and notional pies."""
+    """Four-way pie: stock buy/sell + option buy (incl. exercise) / sell — count & notional."""
+    del stock_timing, option_timing
     parts: list[pd.DataFrame] = []
     if stock is not None and not stock.empty:
-        s = _buy_sell_pie_frame(stock, stock_timing)
-        if not s.empty:
-            s = s.copy()
-            s["instrument"] = "stock"
-            parts.append(s)
+        parts.append(_buy_sell_pie_frame(stock, "stock"))
     if options is not None and not options.empty:
-        o = _buy_sell_pie_frame(options, option_timing)
-        if not o.empty:
-            o = o.copy()
-            o["instrument"] = "option"
-            parts.append(o)
+        parts.append(_buy_sell_pie_frame(options, "option"))
     if not parts:
         fig, ax = plt.subplots(figsize=(6, 3))
         ax.text(0.5, 0.5, "No data", ha="center", va="center")
         return _save(fig, out_dir, "04_buy_sell")
+
     df = pd.concat(parts, ignore_index=True)
-    actions = ["purchase", "sale"]
-    count = df.groupby("side").size().reindex(actions, fill_value=0)
-    notional = df.groupby("side")["notional"].sum().reindex(actions, fill_value=0)
-    total_n = notional.sum()
+    count, notional = _segment_summary(df)
     total_c = int(count.sum())
-    colors = [_ACTION_COLORS[a] for a in actions]
-    labels = [_ACTION_LABELS[a] for a in actions]
+    total_n = float(notional.sum())
+    buy_c = int(count.get("stock_purchase", 0) + count.get("option_purchase", 0))
+    sell_c = int(count.get("stock_sale", 0) + count.get("option_sale", 0))
+    buy_n = float(notional.get("stock_purchase", 0) + notional.get("option_purchase", 0))
+    sell_n = float(notional.get("stock_sale", 0) + notional.get("option_sale", 0))
 
-    fig, axes = plt.subplots(1, 2, figsize=(6.8, 3.0))
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.8))
+    _bar_four_segments(axes[0], count, by_count=True, xlabel="Row count")
+    axes[0].set_title(_mpl_label(f"By count ({total_c:,} rows)"), fontsize=10, pad=8)
+    _bar_four_segments(axes[1], notional, by_count=False, xlabel="Disclosed notional ($)")
+    axes[1].set_title(_mpl_label(f"By notional ({_fmt_notional_short(total_n)})"), fontsize=10, pad=8)
 
-    def _pie(ax, values, title: str) -> None:
-        vals = values.values.astype(float)
-        if vals.sum() <= 0:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-            ax.axis("off")
-            return
-
-        def _autopct(pct: float) -> str:
-            val = pct / 100.0 * vals.sum()
-            if title.startswith("Notional"):
-                return _mpl_label(f"{pct:.1f}%\n{_fmt_notional_short(val)}")
-            return f"{pct:.1f}%\n{int(round(val)):,}"
-
-        ax.pie(vals, labels=labels, autopct=_autopct, colors=colors, startangle=90, textprops={"fontsize": 8})
-        ax.set_title(_mpl_label(title), fontsize=10, pad=8)
-
-    _pie(axes[0], count, f"By count ({total_c:,} trades)")
-    _pie(axes[1], notional, f"By notional ({_fmt_notional_short(total_n)})")
-    n_stock = int((df["instrument"] == "stock").sum()) if "instrument" in df.columns else 0
-    n_opt = int((df["instrument"] == "option").sum()) if "instrument" in df.columns else 0
     fig.suptitle(
         _mpl_label(
-            "Stock + Options · Buy (incl. exercise) vs Sell · "
-            + f"stock {n_stock:,} / options {n_opt:,} rows · "
-            + " · ".join(
-                f"{_ACTION_LABELS[a]}: {int(count[a]):,} / {_fmt_notional_short(notional[a])}"
-                for a in actions
-            )
+            "Stock + Options — buy vs sell (all PTR rows) · "
+            f"Buy {buy_c:,} rows / {_fmt_notional_short(buy_n)} · "
+            f"Sell {sell_c:,} rows / {_fmt_notional_short(sell_n)}"
         ),
-        fontsize=8,
-        y=1.04,
+        fontsize=9,
+        y=1.02,
     )
+    fig.tight_layout()
     return _save(fig, out_dir, "04_buy_sell")
 
 
@@ -475,8 +488,8 @@ def plot_event_study(es_df: pd.DataFrame, out_dir: Path) -> Path:
     return _save(fig, out_dir, "07_event_study")
 
 
-def plot_disclosure_timeline(trades: pd.DataFrame, out_dir: Path, trump_df: pd.DataFrame | None = None) -> Path:
-    df = _with_notional(trades, trump_df)
+def plot_disclosure_timeline(trades: pd.DataFrame, out_dir: Path, pelosi_df: pd.DataFrame | None = None) -> Path:
+    df = _with_notional(trades, pelosi_df)
     df = df[df["action"].isin(["purchase", "sale"])].copy()
     df = df.dropna(subset=["disclosure_date"])
 
@@ -514,7 +527,7 @@ def plot_disclosure_timeline(trades: pd.DataFrame, out_dir: Path, trump_df: pd.D
     ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: _fmt_notional_short(v)))
     ax1.set_title(
         _mpl_label(
-            f"Trades by OGE Disclosure Date · Total {_fmt_notional_short(total_notional)} · {total_trades:,} trades"
+            f"Trades by House PTR Disclosure Date · Total {_fmt_notional_short(total_notional)} · {total_trades:,} trades"
         )
     )
     ax1.set_xlabel("Disclosure date")
@@ -646,7 +659,7 @@ def plot_holding_days(matched_lots: pd.DataFrame, ticker_summary: pd.DataFrame, 
 
 
 def plot_media_match_timelines(timelines: list[dict], out_dir: Path) -> Path | None:
-    """Swimlane: buy / Trump post / sell-or-hold for top matched tickers."""
+    """Swimlane: buy / news post / sell-or-hold for top matched tickers."""
     if not timelines:
         return None
 
@@ -709,7 +722,7 @@ def plot_media_match_timelines(timelines: list[dict], out_dir: Path) -> Path | N
         )
         ax.grid(axis="x", alpha=0.3)
 
-    fig.suptitle("Top 3 Matched Tickers — Buy / Trump Post / Sell or Hold", fontsize=12, y=1.01)
+    fig.suptitle("Top 3 Matched Tickers — Buy / News / Sell or Hold", fontsize=12, y=1.01)
     fig.subplots_adjust(hspace=0.55)
     return _save(fig, out_dir, "16_media_match_timelines")
 
@@ -748,7 +761,7 @@ def plot_open_holdings_snapshot(holdings: pd.DataFrame, out_dir: Path) -> Path |
     else:
         axes[1].axis("off")
 
-    fig.suptitle("Trump Current Net-Long Portfolio Snapshot", fontsize=12)
+    fig.suptitle("Pelosi Current Net-Long Portfolio Snapshot", fontsize=12)
     return _save(fig, out_dir, "17_open_holdings")
 
 
@@ -837,6 +850,36 @@ def plot_portfolio_daily_timeseries(
     return _save(fig, out_dir, prefix)
 
 
+def _remove_legacy_trump_charts(out_dir: Path) -> None:
+    """Delete leftover Trump_following PNG filenames so reports do not embed them."""
+    if not out_dir.exists():
+        return
+    for path in out_dir.glob("*trump*.png"):
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+
+def _timing_returns(return_analysis: dict | None) -> pd.DataFrame | None:
+    if not return_analysis:
+        return None
+    if "pelosi_timing" in return_analysis:
+        return return_analysis["pelosi_timing"]
+    return return_analysis.get("trump_timing")
+
+
+def _timing_summary(return_analysis: dict | None, key_legacy: str, key_pelosi: str | None = None) -> pd.DataFrame:
+    if not return_analysis:
+        return pd.DataFrame()
+    k = key_pelosi or key_legacy.replace("trump_", "pelosi_")
+    for key in (k, key_legacy):
+        val = return_analysis.get(key)
+        if val is not None and not (isinstance(val, pd.DataFrame) and val.empty):
+            return val if isinstance(val, pd.DataFrame) else pd.DataFrame()
+    return pd.DataFrame()
+
+
 def generate_all_charts(
     trades: pd.DataFrame,
     returns_df: pd.DataFrame,
@@ -854,18 +897,16 @@ def generate_all_charts(
     combined_return_analysis: dict | None = None,
     unified_portfolio_daily: pd.DataFrame | None = None,
 ) -> list[Path]:
-    trump_df = return_analysis.get("trump_timing") if return_analysis else None
-    opt_timing = option_return_analysis.get("trump_timing") if option_return_analysis else None
+    _remove_legacy_trump_charts(out_dir)
+    pelosi_df = _timing_returns(return_analysis)
     if options_trades is not None and not options_trades.empty:
-        buy_sell_chart = plot_combined_buy_sell(
-            trades, options_trades, out_dir, stock_timing=trump_df, option_timing=opt_timing
-        )
+        buy_sell_chart = plot_combined_buy_sell(trades, options_trades, out_dir)
     else:
-        buy_sell_chart = plot_buy_sell(trades, out_dir, trump_df=trump_df)
+        buy_sell_chart = plot_buy_sell(trades, out_dir)
     paths = [
-        plot_trade_volume_monthly(trades, out_dir, trump_df=trump_df),
+        plot_trade_volume_monthly(trades, out_dir, pelosi_df=pelosi_df),
         plot_reveal_lag(returns_df, out_dir),
-        plot_top_tickers(trades, out_dir, returns_df=trump_df),
+        plot_top_tickers(trades, out_dir, returns_df=pelosi_df),
         buy_sell_chart,
     ]
     if open_holdings is not None and not open_holdings.empty:
@@ -889,7 +930,7 @@ def generate_all_charts(
         plot_post_returns(returns_df, out_dir),
         plot_backtest_cum(bt, out_dir),
         plot_event_study(es_df, out_dir),
-        plot_disclosure_timeline(trades, out_dir, trump_df=trump_df),
+        plot_disclosure_timeline(trades, out_dir, pelosi_df=pelosi_df),
     ]
     if media_timelines:
         mt = plot_media_match_timelines(media_timelines, out_dir)
@@ -902,23 +943,24 @@ def generate_all_charts(
     if return_analysis:
         paths.append(
             plot_notional_weighted_bars(
-                return_analysis["trump_summary"],
+                _timing_summary(return_analysis, "trump_summary", "pelosi_summary"),
                 "Pelosi Timing — Notional-Weighted Return (by txn date)",
                 out_dir,
                 "10_pelosi_notional_returns",
             )
         )
-        if "trump_buy_summary" in return_analysis and "trump_sell_summary" in return_analysis:
-            if not return_analysis["trump_buy_summary"].empty or not return_analysis["trump_sell_summary"].empty:
-                paths.append(
-                    plot_buy_sell_bars(
-                        return_analysis["trump_buy_summary"],
-                        return_analysis["trump_sell_summary"],
-                        "Pelosi Timing — Buy vs Sell (anchor = transaction date)",
-                        out_dir,
-                        "15_pelosi_buy_vs_sell",
-                    )
+        buy_s = _timing_summary(return_analysis, "trump_buy_summary", "pelosi_buy_summary")
+        sell_s = _timing_summary(return_analysis, "trump_sell_summary", "pelosi_sell_summary")
+        if not buy_s.empty or not sell_s.empty:
+            paths.append(
+                plot_buy_sell_bars(
+                    buy_s,
+                    sell_s,
+                    "Pelosi Timing — Buy vs Sell (anchor = transaction date)",
+                    out_dir,
+                    "15_pelosi_buy_vs_sell",
                 )
+            )
         paths.append(
             plot_notional_weighted_bars(
                 return_analysis["follow_summary"],
@@ -929,7 +971,7 @@ def generate_all_charts(
         )
         paths.append(
             plot_cumulative_pnl(
-                return_analysis["trump_cumulative"],
+                return_analysis.get("pelosi_cumulative", return_analysis.get("trump_cumulative")),
                 "Pelosi Timing — Cumulative PnL (anchor = transaction date)",
                 out_dir,
                 "12_pelosi_cumulative_pnl",
@@ -981,13 +1023,12 @@ def generate_option_charts(
     ticker_summary: pd.DataFrame | None = None,
 ) -> list[Path]:
     """Charts for PTR options (underlying-price horizon returns)."""
-    timing_df = return_analysis.get("trump_timing") if return_analysis else None
+    timing_df = _timing_returns(return_analysis)
     chart_opts = options.copy()
     chart_opts.loc[chart_opts["action"] == "exercise", "action"] = "purchase"
     paths: list[Path] = [
-        plot_buy_sell(chart_opts, out_dir, trump_df=timing_df),
         plot_top_tickers(chart_opts, out_dir, returns_df=timing_df),
-        plot_disclosure_timeline(chart_opts, out_dir, trump_df=timing_df),
+        plot_disclosure_timeline(chart_opts, out_dir, pelosi_df=timing_df),
     ]
     if matched_lots is not None and ticker_summary is not None and not matched_lots.empty:
         h = plot_holding_days(matched_lots, ticker_summary, out_dir)
@@ -998,26 +1039,27 @@ def generate_option_charts(
     if return_analysis:
         paths.append(
             plot_notional_weighted_bars(
-                return_analysis["trump_summary"],
+                _timing_summary(return_analysis, "trump_summary"),
                 "Options — NW Return on Underlying (txn date)",
                 out_dir,
                 "opt_10_timing_returns",
             )
         )
-        if "trump_buy_summary" in return_analysis and "trump_sell_summary" in return_analysis:
-            if not return_analysis["trump_buy_summary"].empty or not return_analysis["trump_sell_summary"].empty:
-                paths.append(
-                    plot_buy_sell_bars(
-                        return_analysis["trump_buy_summary"],
-                        return_analysis["trump_sell_summary"],
-                        "Options — Buy vs Sell (underlying, txn date)",
-                        out_dir,
-                        "opt_15_buy_vs_sell",
-                    )
+        opt_buy = _timing_summary(return_analysis, "trump_buy_summary")
+        opt_sell = _timing_summary(return_analysis, "trump_sell_summary")
+        if not opt_buy.empty or not opt_sell.empty:
+            paths.append(
+                plot_buy_sell_bars(
+                    opt_buy,
+                    opt_sell,
+                    "Options — Buy vs Sell (underlying, txn date)",
+                    out_dir,
+                    "opt_15_buy_vs_sell",
                 )
+            )
         paths.append(
             plot_cumulative_pnl(
-                return_analysis["trump_cumulative"],
+                return_analysis.get("pelosi_cumulative", return_analysis.get("trump_cumulative")),
                 "Options — Cumulative PnL (underlying, txn date)",
                 out_dir,
                 "opt_12_cumulative_pnl",

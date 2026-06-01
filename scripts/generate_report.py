@@ -208,7 +208,7 @@ _FIGURE_CAPTIONS: dict[str, str] = {
     "01_monthly_volume": "交易时间线（按日/周）：名义金额为主；柱顶标注 Top3 公司 buy/sell 名义",
     "02_reveal_lag": "披露滞后（交易日 → 披露日）",
     "03_top_tickers": "Pelosi 名义金额 Top Ticker（amount_min 合计）",
-    "04_buy_sell": "股票+期权：买入（含行权）vs 卖出 — 笔数与名义双饼图",
+    "04_buy_sell": "股票/期权 买·卖 四项 — 笔数与名义条形图（含全部原始行）",
     "14_combined_timing_returns": "股票+期权合并：名义加权 horizon 收益（期权按 100 股/张）",
     "14_combined_cumulative_pnl": "股票+期权合并：累计 PnL（合计 vs 股票 vs 期权）",
     "05_post_returns": "Legacy：披露后收益分布",
@@ -401,25 +401,28 @@ def _trade_action_summary_lines() -> list[str]:
     if not parts:
         return []
     raw = pd.concat(parts, ignore_index=True)
+    raw["segment"] = raw["instrument"] + "_" + raw["side"]
     lines = [
         "",
         "**买卖结构（股票 + 期权原始行；买入含 `exercise`；名义：股票=PTR 下限，期权=张数×100×行权价或 PTR 下限）**",
         "",
-        "| 方向 | 笔数 | 名义合计 | 占总额比例 |",
+        "| 类别 | 笔数 | 名义合计 | 占名义比例 |",
         "|------|-----:|---------:|-----------:|",
     ]
-    total_n = float(raw["notional"].sum())
+    total_n = float(raw["notional"].fillna(0).sum())
     total_c = len(raw)
-    for side, label in [("purchase", "买入"), ("sale", "卖出")]:
-        sub = raw[raw["side"] == side]
-        notional = float(sub["notional"].sum())
+    seg_labels = [
+        ("stock_purchase", "股票买入"),
+        ("stock_sale", "股票卖出"),
+        ("option_purchase", "期权买入/行权"),
+        ("option_sale", "期权卖出"),
+    ]
+    for key, label in seg_labels:
+        sub = raw[raw["segment"] == key]
+        notional = float(sub["notional"].fillna(0).sum())
         pct = notional / total_n * 100 if total_n > 0 else 0
         lines.append(f"| {label} | {len(sub):,} | {_fmt_usd(notional)} | {pct:.1f}% |")
     lines.append(f"| **合计** | **{total_c:,}** | **{_fmt_usd(total_n)}** | 100% |")
-    n_stock = int((raw["instrument"] == "stock").sum())
-    n_opt = int((raw["instrument"] == "option").sum())
-    lines.append(f"| 其中股票行 | {n_stock:,} | — | — |")
-    lines.append(f"| 其中期权行 | {n_opt:,} | — | — |")
 
     comb_path = ROOT / "data" / "processed" / "combined_timing_returns.parquet"
     if comb_path.exists():
@@ -1448,6 +1451,7 @@ def main() -> None:
     filing_stats = _filing_stats(trades)
 
     chart_paths = sorted(figures.glob("*.png")) if figures.exists() else []
+    chart_paths = [p for p in chart_paths if "trump" not in p.stem.lower()]
     chart_paths = _dedupe_legacy_chart_paths(chart_paths)
 
     md = _md_report(summary, xcheck, web, by_ticker, manifest, chart_paths, filing_stats)

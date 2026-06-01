@@ -1295,7 +1295,7 @@
     "position_mtm_end": 2064477.880357014,
     "cum_pnl_end": 3857850.4933045134,
     "peak_mtm_date": "2024-12-24",
-    "peak_mtm": 7417131.478675738,
+    "peak_mtm": 7417131.478675739,
     "n_days": 778
   },
   "unified_portfolio": {
@@ -1312,8 +1312,8 @@
     "daily": {
       "last_date": "2026-04-23",
       "position_cost_end": 22744771.010864258,
-      "position_mtm_end": 29475254.893699527,
-      "cum_pnl_end": 12330779.820296234,
+      "position_mtm_end": 29475254.893699523,
+      "cum_pnl_end": 12330779.820296235,
       "peak_mtm_date": "2025-11-03",
       "peak_mtm": 34300662.70309824,
       "n_days": 778

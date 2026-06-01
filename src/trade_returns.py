@@ -302,6 +302,14 @@ def run_both_analyses(
         realized_detail, realized_summary = compute_realized_fifo(matched_lots, trades, price_cache, settings)
 
     return {
+        "pelosi_timing": trump,
+        "pelosi_timing_buy": trump_buy,
+        "pelosi_timing_sell": trump_sell,
+        "pelosi_summary": notional_weighted_summary(trump, horizons),
+        "pelosi_buy_summary": notional_weighted_summary(trump_buy, horizons),
+        "pelosi_sell_summary": notional_weighted_summary(trump_sell, horizons),
+        "pelosi_cumulative": cumulative_pnl_by_date(trump, horizons),
+        "pelosi_cumulative_buy": cumulative_pnl_by_date(trump_buy, horizons),
         "trump_timing": trump,
         "follow_disclosure": follow,
         "follow_disclosure_buy": follow_buy,
