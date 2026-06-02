@@ -1,4 +1,4 @@
-"""Fetch and catalog OGE financial disclosure PDFs."""
+"""Fetch and catalog House STOCK Act PTR disclosure PDFs (Pelosi / House Clerk)."""
 
 from __future__ import annotations
 

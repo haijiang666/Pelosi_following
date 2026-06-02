@@ -18,6 +18,7 @@ from .disclosures import load_settings, analysis_end_date
 from .holdings import holding_summary_stats
 from .instrument_notional import economic_notional, trade_notional
 from .portfolio_snapshot import (
+    HORIZONS,
     _close_on_date,
     _trading_calendar,
     portfolio_daily_summary_records,
@@ -348,6 +349,62 @@ def compute_unified_portfolio_daily(
     if out.empty:
         return out
     return out.sort_values("date").reset_index(drop=True)
+
+
+def compute_open_holdings_unified_top_n(
+    timing: pd.DataFrame,
+    all_lots: pd.DataFrame,
+    top_n: int = 10,
+) -> pd.DataFrame:
+    """Top open lots from unified FIFO; horizon stats from combined/pelosi timing table."""
+    if all_lots.empty or timing.empty:
+        return pd.DataFrame()
+    open_lots = all_lots[all_lots["match_status"] == "open"].copy()
+    if open_lots.empty:
+        return pd.DataFrame()
+    timing = timing.copy()
+    timing_idx = timing.set_index("trade_id") if "trade_id" in timing.columns else timing
+
+    rows: list[dict[str, Any]] = []
+    settings = load_settings()
+    end = analysis_end_date(settings)
+
+    for ticker, grp in open_lots.groupby("ticker", sort=False):
+        buy_ids = grp["buy_trade_id"].astype(str).tolist()
+        buy_trades = timing[timing["trade_id"].astype(str).isin(buy_ids)].copy()
+        if buy_trades.empty:
+            for bid in buy_ids:
+                if bid in timing_idx.index:
+                    buy_trades = pd.concat([buy_trades, timing_idx.loc[[bid]]])
+        if buy_trades.empty:
+            continue
+        net_notional = float(buy_trades["notional"].sum())
+        if net_notional <= 0:
+            continue
+        earliest = buy_trades.loc[buy_trades["anchor_date"].idxmin() if "anchor_date" in buy_trades else buy_trades.index[0]]
+        entry = pd.Timestamp(earliest.get("anchor_date", earliest.get("transaction_date"))).normalize()
+        inst = grp["buy_instrument"].iloc[0] if "buy_instrument" in grp.columns else "stock"
+        row: dict[str, Any] = {
+            "ticker": ticker,
+            "net_notional": net_notional,
+            "n_open_lots": len(grp),
+            "buy_instrument": inst,
+            "first_buy_date": entry.date(),
+            "days_held": int((end - entry).days),
+            "status": "仍持有",
+        }
+        for h in HORIZONS:
+            rc, pc = f"ret_{h}d", f"pnl_{h}d"
+            if rc in earliest.index and pd.notna(earliest.get(rc)):
+                row[rc] = float(earliest[rc])
+            if pc in earliest.index and pd.notna(earliest.get(pc)):
+                row[pc] = float(earliest[pc])
+        rows.append(row)
+
+    out = pd.DataFrame(rows)
+    if out.empty:
+        return out
+    return out.sort_values("net_notional", ascending=False).head(top_n).reset_index(drop=True)
 
 
 def unified_portfolio_summary(

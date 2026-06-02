@@ -25,9 +25,12 @@ def _load_frames(root: Path | None = None) -> tuple[pd.DataFrame, pd.DataFrame, 
     proc = root / "data" / "processed"
     links = pd.read_parquet(proc / "trade_event_links.parquet")
     events = pd.read_parquet(proc / "events.parquet")
-    trump = pd.read_parquet(proc / "trump_timing_returns.parquet")
+    timing_path = proc / "pelosi_timing_returns.parquet"
+    if not timing_path.exists():
+        timing_path = proc / "trump_timing_returns.parquet"
+    timing = pd.read_parquet(timing_path)
     follow = pd.read_parquet(proc / "follow_disclosure_returns.parquet")
-    return links, events, trump, follow
+    return links, events, timing, follow
 
 
 def _ticker_name_map(returns: pd.DataFrame) -> dict[str, str]:

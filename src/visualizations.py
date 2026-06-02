@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from .instrument_notional import BUY_ACTIONS, pie_notional, trade_notional, trade_side
+from .instrument_notional import BUY_ACTIONS, economic_notional, pie_notional, trade_notional, trade_side
+from .prices import price_on_date
 
 sns.set_theme(style="whitegrid", palette="muted")
 plt.rcParams.update({"figure.dpi": 120, "savefig.dpi": 150, "font.size": 10})
@@ -253,8 +254,12 @@ def plot_top_tickers(
     return _save(fig, out_dir, "03_top_tickers")
 
 
-def _buy_sell_pie_frame(trades: pd.DataFrame, instrument: str) -> pd.DataFrame:
-    """Raw PTR rows for pie charts; notional from pie_notional (not horizon timing table)."""
+def _buy_sell_bar_frame(
+    trades: pd.DataFrame,
+    instrument: str,
+    price_cache: dict[str, pd.DataFrame] | None = None,
+) -> pd.DataFrame:
+    """Raw PTR rows; notional = economic_notional @ txn date (aligns with horizon PnL)."""
     if trades is None or trades.empty:
         return pd.DataFrame()
     df = trades[trades["action"].isin(list(BUY_ACTIONS) + ["sale"])].copy()
@@ -263,8 +268,20 @@ def _buy_sell_pie_frame(trades: pd.DataFrame, instrument: str) -> pd.DataFrame:
     df["instrument"] = instrument
     df["side"] = df["action"].map(lambda a: trade_side(str(a)))
     df["segment"] = df["instrument"] + "_" + df["side"]
-    df["notional"] = df.apply(pie_notional, axis=1)
     df["transaction_date"] = pd.to_datetime(df["transaction_date"], errors="coerce")
+
+    def _row_notional(row: pd.Series) -> float:
+        ticker = row.get("ticker")
+        prices = price_cache.get(str(ticker)) if price_cache and pd.notna(ticker) else None
+        p0 = None
+        if prices is not None and not prices.empty and pd.notna(row["transaction_date"]):
+            p0 = price_on_date(prices, row["transaction_date"])
+        n = economic_notional(row, anchor_price=p0)
+        if pd.notna(n) and n > 0:
+            return float(n)
+        return float(pie_notional(row)) if pd.notna(pie_notional(row)) else np.nan
+
+    df["notional"] = df.apply(_row_notional, axis=1)
     return df
 
 
@@ -361,14 +378,15 @@ def plot_combined_buy_sell(
     out_dir: Path,
     stock_timing: pd.DataFrame | None = None,
     option_timing: pd.DataFrame | None = None,
+    price_cache: dict[str, pd.DataFrame] | None = None,
 ) -> Path:
-    """Four-way pie: stock buy/sell + option buy (incl. exercise) / sell — count & notional."""
+    """Four-way bar chart: stock/option buy (incl. exercise) vs sell — count & economic notional."""
     del stock_timing, option_timing
     parts: list[pd.DataFrame] = []
     if stock is not None and not stock.empty:
-        parts.append(_buy_sell_pie_frame(stock, "stock"))
+        parts.append(_buy_sell_bar_frame(stock, "stock", price_cache))
     if options is not None and not options.empty:
-        parts.append(_buy_sell_pie_frame(options, "option"))
+        parts.append(_buy_sell_bar_frame(options, "option", price_cache))
     if not parts:
         fig, ax = plt.subplots(figsize=(6, 3))
         ax.text(0.5, 0.5, "No data", ha="center", va="center")
@@ -391,9 +409,9 @@ def plot_combined_buy_sell(
 
     fig.suptitle(
         _mpl_label(
-            "Stock + Options — buy vs sell (all PTR rows) · "
-            f"Buy {buy_c:,} rows / {_fmt_notional_short(buy_n)} · "
-            f"Sell {sell_c:,} rows / {_fmt_notional_short(sell_n)}"
+            "Stock + Options — buy vs sell (PTR rows; notional = horizon economic @ txn date) · "
+            f"Buy {buy_c:,} / {_fmt_notional_short(buy_n)} · "
+            f"Sell {sell_c:,} / {_fmt_notional_short(sell_n)}"
         ),
         fontsize=9,
         y=1.02,
@@ -896,11 +914,14 @@ def generate_all_charts(
     option_return_analysis: dict | None = None,
     combined_return_analysis: dict | None = None,
     unified_portfolio_daily: pd.DataFrame | None = None,
+    price_cache: dict[str, pd.DataFrame] | None = None,
 ) -> list[Path]:
     _remove_legacy_trump_charts(out_dir)
     pelosi_df = _timing_returns(return_analysis)
     if options_trades is not None and not options_trades.empty:
-        buy_sell_chart = plot_combined_buy_sell(trades, options_trades, out_dir)
+        buy_sell_chart = plot_combined_buy_sell(
+            trades, options_trades, out_dir, price_cache=price_cache
+        )
     else:
         buy_sell_chart = plot_buy_sell(trades, out_dir)
     paths = [

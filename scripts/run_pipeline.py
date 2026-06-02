@@ -30,7 +30,7 @@ from src.ptr_options import (
 )
 from src.ptr_trades import filter_trades_with_ticker, parse_all_ptr_filings, parse_stats_all, save_trades
 from src.ticker_resolver import enrich_trades_with_tickers
-from src.prices import fetch_prices_for_trades
+from src.prices import fetch_prices_for_trade_universe, fetch_prices_for_trades, merge_price_caches
 from src.holdings import attach_holding_to_trades, fifo_match_trades, holding_summary_stats
 from src.combined_analysis import run_combined_analyses
 from src.trade_returns import run_both_analyses
@@ -132,12 +132,12 @@ def main() -> int:
 
     print("\nSTEP 7: Horizon returns (txn timing vs follow disclosure)")
     ret_analysis = run_both_analyses(tradable, price_cache, matched_lots=all_lots, settings=settings)
-    ret_analysis["trump_timing"].to_parquet(proc / "pelosi_timing_returns.parquet", index=False)
+    ret_analysis["pelosi_timing"].to_parquet(proc / "pelosi_timing_returns.parquet", index=False)
     ret_analysis["follow_disclosure"].to_parquet(proc / "follow_disclosure_returns.parquet", index=False)
-    ret_analysis["trump_summary"].to_csv(reports / "pelosi_timing_summary.csv", index=False)
-    ret_analysis["trump_buy_summary"].to_csv(reports / "pelosi_timing_buy_summary.csv", index=False)
-    ret_analysis["trump_sell_summary"].to_csv(reports / "pelosi_timing_sell_summary.csv", index=False)
-    ret_analysis["trump_cumulative"].to_csv(reports / "pelosi_cumulative_pnl.csv", index=False)
+    ret_analysis["pelosi_summary"].to_csv(reports / "pelosi_timing_summary.csv", index=False)
+    ret_analysis["pelosi_buy_summary"].to_csv(reports / "pelosi_timing_buy_summary.csv", index=False)
+    ret_analysis["pelosi_sell_summary"].to_csv(reports / "pelosi_timing_sell_summary.csv", index=False)
+    ret_analysis["pelosi_cumulative"].to_csv(reports / "pelosi_cumulative_pnl.csv", index=False)
     ret_analysis["follow_summary"].to_csv(reports / "follow_disclosure_summary.csv", index=False)
     ret_analysis["follow_buy_summary"].to_csv(reports / "follow_disclosure_buy_summary.csv", index=False)
     ret_analysis["follow_sell_summary"].to_csv(reports / "follow_disclosure_sell_summary.csv", index=False)
@@ -146,7 +146,7 @@ def main() -> int:
     ret_analysis["follow_sell_cumulative"].to_csv(reports / "follow_sell_cumulative_pnl.csv", index=False)
     if not ret_analysis["realized_lots"].empty:
         ret_analysis["realized_lots"].to_csv(reports / "realized_fifo_lots.csv", index=False)
-    print(ret_analysis["trump_summary"][["horizon_days", "notional_weighted_return", "n_trades"]].to_string(index=False))
+    print(ret_analysis["pelosi_summary"][["horizon_days", "notional_weighted_return", "n_trades"]].to_string(index=False))
 
     options_analysis: dict = {}
     opt_tradable = pd.DataFrame()
@@ -172,25 +172,25 @@ def main() -> int:
         opt_price_cache = fetch_prices_for_trades(opt_tradable, settings)
         print("\nSTEP 7d: Options horizon returns (underlying; purchase/exercise +1, sale −1)")
         opt_ret = run_both_analyses(opt_tradable, opt_price_cache, matched_lots=opt_all_lots, settings=settings)
-        opt_ret["trump_timing"].to_parquet(proc / "options_timing_returns.parquet", index=False)
+        opt_ret["pelosi_timing"].to_parquet(proc / "options_timing_returns.parquet", index=False)
         opt_ret["follow_disclosure"].to_parquet(proc / "options_follow_returns.parquet", index=False)
-        opt_ret["trump_summary"].to_csv(reports / "options_timing_summary.csv", index=False)
-        opt_ret["trump_buy_summary"].to_csv(reports / "options_timing_buy_summary.csv", index=False)
-        opt_ret["trump_sell_summary"].to_csv(reports / "options_timing_sell_summary.csv", index=False)
-        opt_ret["trump_cumulative"].to_csv(reports / "options_cumulative_pnl.csv", index=False)
+        opt_ret["pelosi_summary"].to_csv(reports / "options_timing_summary.csv", index=False)
+        opt_ret["pelosi_buy_summary"].to_csv(reports / "options_timing_buy_summary.csv", index=False)
+        opt_ret["pelosi_sell_summary"].to_csv(reports / "options_timing_sell_summary.csv", index=False)
+        opt_ret["pelosi_cumulative"].to_csv(reports / "options_cumulative_pnl.csv", index=False)
         opt_ret["follow_summary"].to_csv(reports / "options_follow_summary.csv", index=False)
         if not opt_ret["realized_lots"].empty:
             opt_ret["realized_lots"].to_csv(reports / "options_realized_fifo_lots.csv", index=False)
-        print(opt_ret["trump_summary"][["horizon_days", "notional_weighted_return", "n_trades"]].to_string(index=False))
+        print(opt_ret["pelosi_summary"][["horizon_days", "notional_weighted_return", "n_trades"]].to_string(index=False))
         options_analysis = {
             "stats": ostats,
             "n_tradable": len(opt_tradable),
             "n_underlyings": int(opt_tradable["ticker"].nunique()),
             "holding_stats": holding_summary_stats(opt_matched),
             "return_analysis": {
-                "timing": opt_ret["trump_summary"].to_dict(orient="records"),
-                "timing_buy": opt_ret["trump_buy_summary"].to_dict(orient="records"),
-                "timing_sell": opt_ret["trump_sell_summary"].to_dict(orient="records"),
+                "timing": opt_ret["pelosi_summary"].to_dict(orient="records"),
+                "timing_buy": opt_ret["pelosi_buy_summary"].to_dict(orient="records"),
+                "timing_sell": opt_ret["pelosi_sell_summary"].to_dict(orient="records"),
                 "follow": opt_ret["follow_summary"].to_dict(orient="records"),
                 "realized_fifo": opt_ret.get("realized_summary") or {},
             },
@@ -203,8 +203,13 @@ def main() -> int:
         options_analysis = {"stats": ostats, "n_tradable": 0}
 
     print("\nSTEP 7e: Combined stock + option PnL (options = 100 shares/contract on underlying)")
-    merged_prices = dict(price_cache)
-    merged_prices.update(opt_price_cache)
+    merged_prices = fetch_prices_for_trade_universe(
+        tradable,
+        opt_tradable if not opt_tradable.empty else None,
+        settings=settings,
+    )
+    if not merged_prices:
+        merged_prices = merge_price_caches(price_cache, opt_price_cache)
     combined_ret = run_combined_analyses(
         tradable,
         opt_tradable if not opt_tradable.empty else None,
@@ -229,6 +234,10 @@ def main() -> int:
                 ["horizon_days", "notional_weighted_return", "n_trades"]
             ].to_string(index=False)
         )
+        ct = combined_ret["combined_timing"]
+        n_stock_ct = int((ct["instrument"] == "stock").sum()) if ct is not None and not ct.empty else 0
+        n_stock_amt = int((tradable["amount_min"].notna() & (tradable["amount_min"] > 0)).sum())
+        print(f"  Combined timing: stock {n_stock_ct} (expect {n_stock_amt} with amount)")
 
     print("\nSTEP 8: Returns + reveal lag")
     returns_df = compute_returns(tradable, price_cache, settings)
@@ -248,7 +257,7 @@ def main() -> int:
     print(metrics)
     bt.to_parquet(proc / "backtest.parquet", index=False)
 
-    pelosi_for_rank = ret_analysis["trump_timing"].merge(
+    pelosi_for_rank = ret_analysis["pelosi_timing"].merge(
         returns_df[["trade_id", "return_post_disclosure_1d", "return_post_disclosure_5d"]],
         on="trade_id",
         how="left",
@@ -288,9 +297,9 @@ def main() -> int:
         "web_cross_check": samples,
         "backtest_metrics": metrics,
         "return_analysis": {
-            "pelosi_timing": ret_analysis["trump_summary"].to_dict(orient="records"),
-            "pelosi_timing_buy": ret_analysis["trump_buy_summary"].to_dict(orient="records"),
-            "pelosi_timing_sell": ret_analysis["trump_sell_summary"].to_dict(orient="records"),
+            "pelosi_timing": ret_analysis["pelosi_summary"].to_dict(orient="records"),
+            "pelosi_timing_buy": ret_analysis["pelosi_buy_summary"].to_dict(orient="records"),
+            "pelosi_timing_sell": ret_analysis["pelosi_sell_summary"].to_dict(orient="records"),
             "follow_disclosure": ret_analysis["follow_summary"].to_dict(orient="records"),
             "follow_disclosure_buy": ret_analysis["follow_buy_summary"].to_dict(orient="records"),
             "follow_disclosure_sell": ret_analysis["follow_sell_summary"].to_dict(orient="records"),
@@ -322,14 +331,6 @@ def main() -> int:
         },
     }
 
-    print("\nSTEP 11: Visualizations")
-    open_holdings = compute_open_holdings_top_n(ret_analysis["trump_timing"], all_lots, top_n=10)
-    open_holdings.to_csv(reports / "open_holdings_top10.csv", index=False)
-    summary["open_holdings"] = open_holdings_summary_records(open_holdings)
-    portfolio_daily = compute_portfolio_daily_timeseries(tradable, price_cache, settings)
-    portfolio_daily.to_csv(reports / "portfolio_daily.csv", index=False)
-    summary["portfolio_daily"] = portfolio_daily_summary_records(portfolio_daily)
-
     print("\nSTEP 11b: Unified portfolio FIFO (stock + options on underlying)")
     unified_matched, unified_by_ticker, _, unified_all_lots = fifo_match_unified(
         tradable, opt_tradable if not opt_tradable.empty else None, merged_prices
@@ -351,6 +352,27 @@ def main() -> int:
         f"(from option/exercise: {ufifo.get('n_matched_from_option', 0)}), "
         f"prior_position sells: {ufifo.get('n_prior_sells', 0)}"
     )
+
+    print("\nSTEP 11: Visualizations")
+    from src.unified_portfolio import compute_open_holdings_unified_top_n
+
+    open_holdings_stock = compute_open_holdings_top_n(
+        ret_analysis["pelosi_timing"], all_lots, top_n=10
+    )
+    open_holdings_stock.to_csv(reports / "open_holdings_top10_stock_fifo.csv", index=False)
+    timing_for_holdings = combined_ret.get("combined_timing") if combined_ret else ret_analysis["pelosi_timing"]
+    open_holdings = compute_open_holdings_unified_top_n(
+        timing_for_holdings,
+        unified_all_lots,
+        top_n=10,
+    )
+    open_holdings.to_csv(reports / "open_holdings_top10.csv", index=False)
+    summary["open_holdings"] = open_holdings_summary_records(open_holdings)
+    summary["open_holdings_stock_fifo_only"] = open_holdings_summary_records(open_holdings_stock)
+    portfolio_daily = compute_portfolio_daily_timeseries(tradable, price_cache, settings)
+    portfolio_daily.to_csv(reports / "portfolio_daily.csv", index=False)
+    summary["portfolio_daily"] = portfolio_daily_summary_records(portfolio_daily)
+    summary["portfolio_daily_note"] = "仅股票 FIFO + PTR amount_min；期权/行权敞口见 unified_portfolio_daily"
     (reports / "final_summary.json").write_text(json.dumps(summary, indent=2, default=str))
 
     # ret_analysis keys still named trump_* internally — charts use same structure
@@ -369,6 +391,7 @@ def main() -> int:
         option_return_analysis=opt_ret,
         combined_return_analysis=combined_ret if combined_ret else None,
         unified_portfolio_daily=unified_daily if not unified_daily.empty else None,
+        price_cache=merged_prices,
     )
     if opt_ret is not None and not opt_tradable.empty:
         from src.visualizations import generate_option_charts

@@ -208,7 +208,7 @@ _FIGURE_CAPTIONS: dict[str, str] = {
     "01_monthly_volume": "交易时间线（按日/周）：名义金额为主；柱顶标注 Top3 公司 buy/sell 名义",
     "02_reveal_lag": "披露滞后（交易日 → 披露日）",
     "03_top_tickers": "Pelosi 名义金额 Top Ticker（amount_min 合计）",
-    "04_buy_sell": "股票/期权 买·卖 四项 — 笔数与名义条形图（含全部原始行）",
+    "04_buy_sell": "股票/期权 买·卖 四项 — 笔数与经济名义（交易日标的收盘价×张数×100）",
     "14_combined_timing_returns": "股票+期权合并：名义加权 horizon 收益（期权按 100 股/张）",
     "14_combined_cumulative_pnl": "股票+期权合并：累计 PnL（合计 vs 股票 vs 期权）",
     "05_post_returns": "Legacy：披露后收益分布",
@@ -506,6 +506,39 @@ def _combined_analysis_section(summary: dict, fig) -> list[str]:
     return lines
 
 
+def _methodology_notion_section(summary: dict) -> list[str]:
+    """P0-02: three notional columns + which table uses which FIFO/MTM."""
+    n_miss = summary.get("tradable_missing_amount", 0)
+    ca = summary.get("combined_analysis") or {}
+    n_ct = ca.get("n_timing_trades", "—")
+    n_st = ca.get("n_timing_stock", "—")
+    n_opt = ca.get("n_timing_option", "—")
+    return [
+        "",
+        "## 名义与口径（读表前必读）",
+        "",
+        "本报告并行使用 **三套名义** 与 **两套 FIFO / MTM**，请勿混读数字：",
+        "",
+        "| 名义类型 | 定义 | 用于 |",
+        "|----------|------|------|",
+        "| **PTR 下限** `amount_min` | House 披露区间下限 | 原始表合计、仅股票 FIFO、`portfolio_daily` |",
+        "| **经济名义** `economic_notional` | 股票=PTR 下限；期权=张数×100×**交易日标的收盘价** | Horizon NW、统一 FIFO、`unified_portfolio_daily` |",
+        "| **Strike 名义**（图表回退） | 张数×100×行权价 | 无现货价时；主图 **04** 已优先经济名义 |",
+        "",
+        "| 模块 | 队列 | 本样本要点 |",
+        "|------|------|------------|",
+        f"| **Horizon timing** | 无 FIFO；每笔独立事件 | 合并账 **{n_ct}** 笔（股票 **{n_st}** + 期权 **{n_opt}**） |",
+        "| **股票 FIFO** | ticker；仅 purchase/sale | 已实现用 `min(买,卖) amount_min`，**≠** horizon |",
+        "| **统一 FIFO** | purchase/exercise 入、sale 出 | `open_holdings_top10.csv` 基于统一队列 |",
+        "| **`portfolio_daily`** | 仅股票 FIFO + PTR | 与统一 MTM 可能差一个数量级 |",
+        "",
+        f"- **金额缺失**：仍有 **{n_miss}** 笔股票无 `amount_min`，不进 NW 表（期权可无 PTR 金额仍靠张数×价计价）。",
+        "- **合并账**：同一标的上股票与期权/行权各算一笔独立 timing PnL，**未**去重净敞口。",
+        "- **附录回测**：`trades_analysis` / 等权披露日回测含 **全部有 ticker 笔**（可无金额），与主表 NW 笔数不同。",
+        "",
+    ]
+
+
 def _unified_portfolio_section(summary: dict, fig) -> list[str]:
     up = summary.get("unified_portfolio") or {}
     fifo = up.get("fifo") or {}
@@ -556,13 +589,16 @@ def _portfolio_daily_section(summary: dict) -> list[str]:
     if not meta:
         return []
 
+    scope = summary.get("portfolio_daily_note") or (
+        "仅股票 FIFO + PTR `amount_min`；含期权/行权请见下文 **统一 FIFO 组合**。"
+    )
     return [
         "",
         "## Pelosi 组合持仓与 PnL 时间序列",
         "",
         "按 **FIFO 净多头** 重建每个交易日的 EOD 持仓：",
         "- **持仓规模**：未平仓买入的 PTR 名义合计（成本）及按收盘价 mark-to-market 的市值；",
-        "- **仅股票** FIFO；含期权/行权请见下文 **统一 FIFO 组合**。",
+        f"- **口径**：{scope}",
         "- **每日 PnL**：各仍持有标的的日度价格变动 × 对应名义仓位，卖出日记入已实现收益；",
         "- **累计 PnL**：全部交易日 daily PnL 的 running sum（整组合曲线）。",
         "",
@@ -590,16 +626,16 @@ def _open_holdings_section(summary: dict) -> list[str]:
         "",
         "## Pelosi 当前净多头持仓（Top 10）",
         "",
-        "基于 **FIFO 未配对买入**（`match_status=open`），按披露区间下限合计排序。",
-        "Horizon 收益以 **最早一笔未平买入** 的交易日为 anchor（Pelosi timing）。",
-        "截至分析截止日仍标注 **仍持有**；明细见 `reports/open_holdings_top10.csv`。",
+        "基于 **统一 FIFO**（股票+期权/行权入队）未配对 lot（`match_status=open`），按 horizon **经济名义** 合计排序。",
+        "Horizon 收益以 **最早一笔未平买入** 的 anchor 日计（合并账用 `combined_timing`）。",
+        "截至分析截止日仍标注 **仍持有**；仅股票 FIFO 对照见 `open_holdings_top10_stock_fifo.csv`。",
         "",
         "> **净名义不是精确市值**：House PTR 只披露区间（如 **$500,001–$1,000,000**），"
         "本表用区间**下限** `amount_min` 相加，故常见 **$500,001、$1,000,002**（两笔各下限 $500,001）等「多 $1」——"
         "这是 STOCK Act 档位设计，不是程序多加 1 美元。",
         "",
-        "| Ticker | 净名义下限($) | 未平笔数 | 最早买入 | 最近买入 | 持有天 | 状态 | +1d | +5d | +10d | +20d | +30d |",
-        "|--------|--------------:|---------:|----------|----------|------:|------|-----:|-----:|------:|------:|------:|",
+        "| Ticker | 净名义($) | 未平 lot | 来源 | 最早买入 | 持有天 | 状态 | +1d | +5d | +10d | +20d | +30d |",
+        "|--------|----------:|---------:|------|----------|------:|------|-----:|-----:|------:|------:|------:|",
     ]
     for r in rows[:10]:
         def _pct(key: str) -> str:
@@ -608,10 +644,11 @@ def _open_holdings_section(summary: dict) -> list[str]:
                 return "—"
             return f"{float(v)*100:.2f}%"
 
+        inst = r.get("buy_instrument", "stock")
         lines.append(
             f"| {r.get('ticker', '?')} | {float(r.get('net_notional', 0)):,.0f} | "
-            f"{r.get('n_open_lots', r.get('n_open_buys', '—'))} | "
-            f"{r.get('first_buy_date', '—')} | {r.get('latest_buy_date', '—')} | "
+            f"{r.get('n_open_lots', r.get('n_open_buys', '—'))} | {inst} | "
+            f"{r.get('first_buy_date', '—')} | "
             f"{r.get('days_held', '—')} | {r.get('status', '仍持有')} | "
             f"{_pct('ret_1d')} | {_pct('ret_5d')} | {_pct('ret_10d')} | {_pct('ret_20d')} | {_pct('ret_30d')} |"
         )
@@ -696,6 +733,7 @@ def _md_report(
         "",
     ]
     lines += _trade_action_summary_lines()
+    lines += _methodology_notion_section(summary)
     lines += fig("08_disclosure_timeline")
     lines += fig("01_monthly_volume")
     lines += fig("04_buy_sell")
@@ -942,8 +980,12 @@ def _md_report(
     ]
     lines += fig("14_follow_buy_vs_sell")
     lines += fig("13_follow_cumulative_pnl")
+    n_nw = summary.get("tradable_with_notional", summary.get("tradable_with_ticker", 0))
     lines += [
         "## 附录：旧版等权披露日回测（参考）",
+        "",
+        f"> **口径**：本附录基于 **全部有 ticker 股票**（约 **{n_trad}** 笔），**不要求** `amount_min`；"
+        f"主文 NW 表仅 **{n_nw}** 笔有金额。两者 **不可** 与 §1 timing NW 直接对比。",
         "",
         f"- Reveal lag 中位: **{summary.get('median_reveal_lag_days', 0):.0f}** 天",
         f"- 等权按披露日复利 (+1td only): **{port_ret:.2%}**",
@@ -972,6 +1014,7 @@ def _md_report(
         "- 数据来源为 **House Clerk STOCK Act PTR**（`disclosures-clerk.house.gov`），非总统 OGE Form 278-T。",
         "- 名义金额 = PTR 披露区间**下限**相加，非精确成交价；单笔可能落在 $1,001–$15,000 至 $50M+ 等 bracket。",
         "- 主收益表默认 **有 `amount_min` 的笔数**；与「有 ticker」笔数可能不同（OCR 仅 ticker 行已尝试从同 filing 回填金额）。",
+        "- 三套名义 / 两套 FIFO 对照见文首 **「名义与口径」**；合并价表已按 ticker 并集日期（修复短窗口覆盖长窗口）。",
         "- `return_post_disclosure_20d` 在披露日距数据截止不足 20 交易日时为空。",
         "",
         "完整数据: `reports/trades_analysis.csv`",

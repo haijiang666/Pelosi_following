@@ -88,6 +88,43 @@ def fetch_prices_for_trades(trades: pd.DataFrame, settings: dict[str, Any] | Non
     return result
 
 
+def merge_price_caches(*caches: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+    """
+    Merge per-ticker price series without letting a shorter window overwrite a longer one.
+    Fixes P0-03: dict.update(opt_cache) truncated AAPL/NVDA past option-only fetch end.
+    """
+    merged: dict[str, pd.DataFrame] = {}
+    for cache in caches:
+        for ticker, df in cache.items():
+            if df is None or df.empty:
+                continue
+            key = str(ticker)
+            cur = merged.get(key)
+            if cur is None or cur.empty:
+                merged[key] = df.copy()
+                continue
+            a = cur.copy()
+            b = df.copy()
+            a.index = pd.to_datetime(a.index).normalize()
+            b.index = pd.to_datetime(b.index).normalize()
+            out = pd.concat([a, b])
+            out = out[~out.index.duplicated(keep="last")].sort_index()
+            merged[key] = out
+    return merged
+
+
+def fetch_prices_for_trade_universe(
+    *trade_frames: pd.DataFrame,
+    settings: dict[str, Any] | None = None,
+) -> dict[str, pd.DataFrame]:
+    """One price pull per ticker using the union of all trade frames (widest date window)."""
+    parts = [f for f in trade_frames if f is not None and not f.empty]
+    if not parts:
+        return {}
+    union = pd.concat(parts, ignore_index=True)
+    return fetch_prices_for_trades(union, settings)
+
+
 def price_on_date(prices: pd.DataFrame, date: pd.Timestamp, col: str = "Close") -> float | None:
     if prices.empty or pd.isna(date):
         return None
