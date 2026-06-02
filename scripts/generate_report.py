@@ -218,8 +218,7 @@ _FIGURE_CAPTIONS: dict[str, str] = {
     "18_portfolio_timeseries": "组合持仓规模与累计 PnL 随时间变化（仅股票 FIFO 日度）",
     "19_unified_portfolio_timeseries": "统一 FIFO（股票+期权/行权）：仓位与累计 PnL 随时间",
     "20_daily_accumulated_pnl": "每个交易日累计 PnL（FIFO 盯市，直至分析截止日）",
-    "21_weekly_pnl_top3_bars": "每周 PnL：当周 |PnL| 前三股票 + 其他（堆叠柱）",
-    "21_daily_pnl_top3_stack": "（已废弃）请见 21_weekly_pnl_top3_bars",
+    "21_monthly_pnl_top3_bars": "每月 PnL（2024 起）：当月 |PnL| 前三股票 + 其他（堆叠柱）",
     "06_backtest_cum": "Legacy：等权披露日回测累计收益",
     "07_event_study": "事件研究：披露日 abnormal return",
     "08_disclosure_timeline": "披露日批次：披露名义总额 + 笔数",
@@ -746,7 +745,7 @@ def _md_report(
     lines += _portfolio_daily_section(summary)
     lines += fig("18_portfolio_timeseries")
     lines += fig("20_daily_accumulated_pnl")
-    lines += fig("21_weekly_pnl_top3_bars")
+    lines += fig("21_monthly_pnl_top3_bars")
     lines += _unified_portfolio_section(summary, fig)
     lines += [
         "",

@@ -1,6 +1,6 @@
 # Pelosi 股票/ETF 交易分析报告
 
-> 生成时间: 2026-06-02 22:05 · House STOCK Act PTR · 2023-03-09 起
+> 生成时间: 2026-06-02 22:17 · House STOCK Act PTR · 2023-03-09 起
 
 ## 数据范围
 
@@ -133,8 +133,8 @@ Horizon 收益以 **最早一笔未平买入** 的 anchor 日计（合并账用 
 
 
 <figure class="report-fig">
-<img src="figures/21_weekly_pnl_top3_bars.png" alt="每周 PnL：当周 |PnL| 前三股票 + 其他（堆叠柱）">
-<figcaption>每周 PnL：当周 |PnL| 前三股票 + 其他（堆叠柱）</figcaption>
+<img src="figures/21_monthly_pnl_top3_bars.png" alt="每月 PnL（2024 起）：当月 |PnL| 前三股票 + 其他（堆叠柱）">
+<figcaption>每月 PnL（2024 起）：当月 |PnL| 前三股票 + 其他（堆叠柱）</figcaption>
 </figure>
 
 
