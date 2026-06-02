@@ -37,11 +37,13 @@ from src.trade_returns import run_both_analyses
 from src.portfolio_snapshot import (
     compute_open_holdings_top_n,
     compute_portfolio_daily_timeseries,
+    compute_ticker_daily_pnl,
     open_holdings_summary_records,
     portfolio_daily_summary_records,
 )
 from src.unified_portfolio import (
     compute_unified_portfolio_daily,
+    compute_unified_ticker_daily_pnl,
     fifo_match_unified,
     unified_portfolio_summary,
 )
@@ -373,6 +375,14 @@ def main() -> int:
     portfolio_daily.to_csv(reports / "portfolio_daily.csv", index=False)
     summary["portfolio_daily"] = portfolio_daily_summary_records(portfolio_daily)
     summary["portfolio_daily_note"] = "仅股票 FIFO + PTR amount_min；期权/行权敞口见 unified_portfolio_daily"
+    pnl_daily_primary = unified_daily if not unified_daily.empty else portfolio_daily
+    ticker_daily_pnl = compute_unified_ticker_daily_pnl(
+        tradable, opt_tradable if not opt_tradable.empty else None, merged_prices, settings
+    )
+    if ticker_daily_pnl.empty:
+        ticker_daily_pnl = compute_ticker_daily_pnl(tradable, price_cache, settings)
+    if not ticker_daily_pnl.empty:
+        ticker_daily_pnl.to_csv(reports / "portfolio_ticker_daily_pnl.csv", index=False)
     (reports / "final_summary.json").write_text(json.dumps(summary, indent=2, default=str))
 
     # ret_analysis keys still named trump_* internally — charts use same structure
@@ -392,6 +402,8 @@ def main() -> int:
         combined_return_analysis=combined_ret if combined_ret else None,
         unified_portfolio_daily=unified_daily if not unified_daily.empty else None,
         price_cache=merged_prices,
+        ticker_daily_pnl=ticker_daily_pnl if not ticker_daily_pnl.empty else None,
+        pnl_daily_for_accum=pnl_daily_primary if not pnl_daily_primary.empty else None,
     )
     if opt_ret is not None and not opt_tradable.empty:
         from src.visualizations import generate_option_charts

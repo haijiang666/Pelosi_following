@@ -1191,8 +1191,8 @@
     "daily": {
       "last_date": "2026-04-23",
       "position_cost_end": 22744771.010864258,
-      "position_mtm_end": 30110782.74690996,
-      "cum_pnl_end": 14291539.726089329,
+      "position_mtm_end": 30110782.746909957,
+      "cum_pnl_end": 14291539.72608933,
       "peak_mtm_date": "2025-11-03",
       "peak_mtm": 36166185.115468055,
       "n_days": 778
@@ -1483,10 +1483,10 @@
   "portfolio_daily": {
     "last_date": "2026-04-23",
     "position_cost_end": 1650006.0,
-    "position_mtm_end": 2064477.880357014,
+    "position_mtm_end": 2064477.8803570142,
     "cum_pnl_end": 3857850.4933045134,
     "peak_mtm_date": "2024-12-24",
-    "peak_mtm": 7417131.478675738,
+    "peak_mtm": 7417131.478675739,
     "n_days": 778
   },
   "portfolio_daily_note": "\u4ec5\u80a1\u7968 FIFO + PTR amount_min\uff1b\u671f\u6743/\u884c\u6743\u655e\u53e3\u89c1 unified_portfolio_daily"
