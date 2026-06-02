@@ -1,6 +1,6 @@
 # Pelosi 股票/ETF 交易分析报告
 
-> 生成时间: 2026-06-02 21:50 · House STOCK Act PTR · 2023-03-09 起
+> 生成时间: 2026-06-02 22:05 · House STOCK Act PTR · 2023-03-09 起
 
 ## 数据范围
 
@@ -401,7 +401,10 @@ Combined book: stock notional = PTR amount_min; option notional = n_contracts ×
 <figcaption>Follow 披露日：累计 PnL</figcaption>
 </figure>
 
-## Top Tickers（按 Pelosi 名义金额 `amount_min` 合计）
+## 股票 Top Tickers（`pelosi_timing` 名义合计）
+
+与上文 **§1 Pelosi timing** 同一批 **23** 笔有金额股票；`total_notional` = 各笔 `notional`（PTR `amount_min`）按 ticker 求和。
+`avg_post_*` 为旧版披露日后收益（附录已移除），**≠** 主表 horizon NW。
 
 ```
 ticker  trades  buys  sales  total_notional  avg_post_5d  avg_post_1d
@@ -419,8 +422,8 @@ ticker  trades  buys  sales  total_notional  avg_post_5d  avg_post_1d
 
 
 <figure class="report-fig">
-<img src="figures/03_top_tickers.png" alt="Pelosi 名义金额 Top Ticker（amount_min 合计）">
-<figcaption>Pelosi 名义金额 Top Ticker（amount_min 合计）</figcaption>
+<img src="figures/03_top_tickers.png" alt="股票 Top Ticker：pelosi_timing 名义合计（与下表一致）">
+<figcaption>股票 Top Ticker：pelosi_timing 名义合计（与下表一致）</figcaption>
 </figure>
 
 

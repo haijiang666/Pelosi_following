@@ -229,6 +229,8 @@ def plot_top_tickers(
     out_dir: Path,
     n: int = 15,
     returns_df: pd.DataFrame | None = None,
+    prefix: str = "03_top_tickers",
+    title: str | None = None,
 ) -> Path:
     if returns_df is not None and "notional" in returns_df.columns and "ticker" in returns_df.columns:
         dedupe_col = "trade_id" if "trade_id" in returns_df.columns else "ticker"
@@ -238,20 +240,20 @@ def plot_top_tickers(
             .sum()
             .nlargest(n)
         )
-        title = f"Top {n} Tickers by Pelosi Notional (amount_min)"
+        chart_title = title or f"Top {n} tickers by Pelosi timing notional (PTR amount_min, stock)"
         xlabel = "Notional ($)"
     else:
         df = trades[trades["ticker"].notna()].copy()
         df["notional"] = df.apply(trade_notional, axis=1)
         top = df.groupby("ticker")["notional"].sum().nlargest(n)
-        title = f"Top {n} Tickers by Pelosi Notional (amount_min)"
+        chart_title = title or f"Top {n} tickers by raw PTR amount_min (all parsed stock rows)"
         xlabel = "Notional ($)"
     fig, ax = plt.subplots(figsize=(8, 5))
     top.sort_values().plot(kind="barh", ax=ax, color="#9b59b6")
-    ax.set_title(title)
+    ax.set_title(_mpl_label(chart_title))
     ax.set_xlabel(xlabel)
     ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"${x/1e6:.1f}M" if x >= 1e6 else f"${x/1e3:.0f}K"))
-    return _save(fig, out_dir, "03_top_tickers")
+    return _save(fig, out_dir, prefix)
 
 
 def _buy_sell_bar_frame(
@@ -1195,7 +1197,13 @@ def generate_option_charts(
     chart_opts = options.copy()
     chart_opts.loc[chart_opts["action"] == "exercise", "action"] = "purchase"
     paths: list[Path] = [
-        plot_top_tickers(chart_opts, out_dir, returns_df=timing_df),
+        plot_top_tickers(
+            chart_opts,
+            out_dir,
+            returns_df=timing_df,
+            prefix="opt_03_top_tickers",
+            title="Top tickers — options timing notional (100 sh/contract × spot)",
+        ),
         plot_disclosure_timeline(chart_opts, out_dir, pelosi_df=timing_df),
     ]
     if matched_lots is not None and ticker_summary is not None and not matched_lots.empty:

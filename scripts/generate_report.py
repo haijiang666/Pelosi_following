@@ -207,7 +207,8 @@ def _filing_content_label(n_equity_etf: int, n_bond_other: int, file_ok: bool) -
 _FIGURE_CAPTIONS: dict[str, str] = {
     "01_monthly_volume": "交易时间线（按日/周）：名义金额为主；柱顶标注 Top3 公司 buy/sell 名义",
     "02_reveal_lag": "披露滞后（交易日 → 披露日）",
-    "03_top_tickers": "Pelosi 名义金额 Top Ticker（amount_min 合计）",
+    "03_top_tickers": "股票 Top Ticker：pelosi_timing 名义合计（与下表一致）",
+    "opt_03_top_tickers": "期权 Top Ticker：options timing 经济名义合计",
     "04_buy_sell": "股票/期权 买·卖 四项 — 笔数与经济名义（交易日标的收盘价×张数×100）",
     "14_combined_timing_returns": "股票+期权合并：名义加权 horizon 收益（期权按 100 股/张）",
     "14_combined_cumulative_pnl": "股票+期权合并：累计 PnL（合计 vs 股票 vs 期权）",
@@ -316,6 +317,9 @@ def _options_analysis_section(summary: dict, embedded: set[str], fig: callable) 
         f"- FIFO 配对: **{hs.get('n_matched_pairs', 0)}** 对，中位持仓 **{hs.get('median_holding_days', 0):.0f}** 天",
         "- 明细: `reports/options_raw.csv`, `reports/options_matched_lots.csv`",
         "",
+    ]
+    lines += fig("opt_03_top_tickers")
+    lines += [
         "### O1. 期权 timing（锚点 = 交易发生日，标的价）",
         "",
         "#### O1a. 合计（买 + 卖 + 行权；卖/行权按 sign=−1 或 +1 见上）",
@@ -983,7 +987,10 @@ def _md_report(
     lines += fig("14_follow_buy_vs_sell")
     lines += fig("13_follow_cumulative_pnl")
     lines += [
-        "## Top Tickers（按 Pelosi 名义金额 `amount_min` 合计）",
+        "## 股票 Top Tickers（`pelosi_timing` 名义合计）",
+        "",
+        "与上文 **§1 Pelosi timing** 同一批 **23** 笔有金额股票；`total_notional` = 各笔 `notional`（PTR `amount_min`）按 ticker 求和。",
+        "`avg_post_*` 为旧版披露日后收益（附录已移除），**≠** 主表 horizon NW。",
         "",
         "```",
         by_ticker.head(15).to_string(index=False),
