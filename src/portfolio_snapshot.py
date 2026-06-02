@@ -186,7 +186,7 @@ def compute_ticker_daily_pnl(
     price_cache: dict[str, pd.DataFrame],
     settings: dict[str, Any] | None = None,
 ) -> pd.DataFrame:
-    """Per-ticker daily and cumulative PnL on the same FIFO calendar as portfolio_daily."""
+    """Per-ticker daily/cumulative PnL on the same FIFO calendar as portfolio_daily."""
     settings = settings or load_settings()
     end = analysis_end_date(settings)
 
