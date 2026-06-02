@@ -13,6 +13,7 @@ from html import escape
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -205,7 +206,8 @@ def _filing_content_label(n_equity_etf: int, n_bond_other: int, file_ok: bool) -
 
 
 _FIGURE_CAPTIONS: dict[str, str] = {
-    "01_monthly_volume": "交易时间线（按日/周）：名义金额为主；柱顶标注 Top3 公司 buy/sell 名义",
+    "01_monthly_volume": "股票/ETF 交易时间线（按日/周）：名义金额为主；柱顶 Top3 buy/sell",
+    "01_monthly_volume_options": "期权交易时间线（按日/周）：经济名义（张数×100×标的价）；柱顶 Top3",
     "02_reveal_lag": "披露滞后（交易日 → 披露日）",
     "03_top_tickers": "股票 Top Ticker：pelosi_timing 名义合计（与下表一致）",
     "opt_03_top_tickers": "期权 Top Ticker：options timing 经济名义合计",
@@ -215,10 +217,11 @@ _FIGURE_CAPTIONS: dict[str, str] = {
     "05_post_returns": "Legacy：披露后收益分布",
     "16_media_match_timelines": "Top3 匹配 ticker：买入 / Pelosi 发帖 / 卖出或仍持有",
     "17_open_holdings": "当前净多头 Top10：名义 + 买入后 horizon 收益",
-    "18_portfolio_timeseries": "组合持仓规模与累计 PnL 随时间变化（仅股票 FIFO 日度）",
-    "19_unified_portfolio_timeseries": "统一 FIFO（股票+期权/行权）：仓位与累计 PnL 随时间",
-    "20_daily_accumulated_pnl": "每个交易日累计 PnL（FIFO 盯市，直至分析截止日）",
-    "21_monthly_pnl_top3_bars": "每月 PnL（2024 起）：当月 |PnL| 前三股票 + 其他（堆叠柱）",
+    "18_portfolio_timeseries": "组合：持仓名义（上）+ 组合级累计 PnL（下，unified_portfolio_daily）",
+    "18_portfolio_timeseries_stock": "股票单独：持仓名义 + 累计 PnL（FIFO）",
+    "18_portfolio_timeseries_options": "期权单独：持仓名义 + 累计 PnL（FIFO，100 股/张）",
+    "19_unified_portfolio_timeseries": "（已拆分）见 18 / 18_stock / 18_options",
+    "21_monthly_pnl_top3_bars": "每月 PnL（2024 起）：柱上标注 Top3 股票代码，灰色段=其他",
     "06_backtest_cum": "Legacy：等权披露日回测累计收益",
     "07_event_study": "事件研究：披露日 abnormal return",
     "08_disclosure_timeline": "披露日批次：披露名义总额 + 笔数",
@@ -311,7 +314,7 @@ def _options_analysis_section(summary: dict, embedded: set[str], fig: callable) 
         "",
         "> **收益口径**：Horizon PnL 用 **标的股票** 价格计算（非期权合约市价）。"
         " **买入/行权 sign=+1**，**卖出 sign=−1**（跟单方向）。"
-        " 行权 `exercise` 在 FIFO 中视为平仓 long call。",
+        " 组合 FIFO / 日度 PnL **不以行权日开平仓**（call 敞口自 **买入 call** 起按 100 股盯市；行权仅交付股份）。",
         "",
         f"- FIFO 配对: **{hs.get('n_matched_pairs', 0)}** 对，中位持仓 **{hs.get('median_holding_days', 0):.0f}** 天",
         "- 明细: `reports/options_raw.csv`, `reports/options_matched_lots.csv`",
@@ -535,7 +538,7 @@ def _methodology_notion_section(summary: dict) -> list[str]:
         "|------|------|------------|",
         f"| **Horizon timing** | 无 FIFO；每笔独立事件 | 合并账 **{n_ct}** 笔（股票 **{n_st}** + 期权 **{n_opt}**） |",
         "| **股票 FIFO** | ticker；仅 purchase/sale | 已实现用 `min(买,卖) amount_min`，**≠** horizon |",
-        "| **统一 FIFO** | purchase/exercise 入、sale 出 | `open_holdings_top10.csv` 基于统一队列 |",
+        "| **统一 FIFO** | 股票 purchase/exercise 入；期权仅 **purchase/sale**（行权不入队） | `open_holdings_top10.csv` |",
         "| **`portfolio_daily`** | 仅股票 FIFO + PTR | 与统一 MTM 可能差一个数量级 |",
         "",
         f"- **金额缺失**：仍有 **{n_miss}** 笔股票无 `amount_min`，不进 NW 表（期权可无 PTR 金额仍靠张数×价计价）。",
@@ -544,75 +547,52 @@ def _methodology_notion_section(summary: dict) -> list[str]:
     ]
 
 
-def _unified_portfolio_section(summary: dict, fig) -> list[str]:
+def _portfolio_daily_section(summary: dict) -> list[str]:
     up = summary.get("unified_portfolio") or {}
     fifo = up.get("fifo") or {}
-    daily = up.get("daily") or {}
-    if not fifo and not daily:
-        return []
-    lines = [
-        "",
-        "## 统一 FIFO 组合（股票 + 期权/行权，按标的）",
-        "",
-        "同一 **underlying ticker** 一条 FIFO 队列：",
-        "- **入队**：股票 `purchase`、期权 `purchase`（按 张数×100×标的价 计名义）、`exercise`（行权交付股份）；",
-        "- **出队**：股票 `sale`、期权 `sale`；",
-        "- 这样 NVDA/AAPL 等「先买 call / 行权、后卖股」可与后续 **sell** 配对，减少 `prior_position` 孤儿卖单。",
-        "",
-        f"- FIFO 配对: **{fifo.get('n_matched_pairs', '—')}** 对（其中买入来自期权/行权: **{fifo.get('n_matched_from_option', 0)}**，来自股票: **{fifo.get('n_matched_from_stock', 0)}**）",
-        f"- 仍无买入匹配的卖出: **{fifo.get('n_prior_sells', 0)}** 笔",
-        f"- 未平仓 lot: **{fifo.get('n_open_lots', 0)}**",
-    ]
-    if daily:
-        lines += [
-            f"- 截止 **{daily.get('last_date', '—')}**：MTM **{_fmt_usd(daily.get('position_mtm_end', 0))}**，"
-            f"累计 PnL **{_fmt_usd(daily.get('cum_pnl_end', 0))}**",
-        ]
-    lines += [
-        "",
-        "明细: `reports/unified_matched_lots.csv`，`reports/unified_portfolio_daily.csv`",
-        "",
-    ]
-    lines += fig("19_unified_portfolio_timeseries")
-    return lines
-
-
-def _portfolio_daily_section(summary: dict) -> list[str]:
-    meta = summary.get("portfolio_daily") or {}
+    meta: dict = {}
+    path = ROOT / "reports" / "unified_portfolio_daily.csv"
+    if path.exists():
+        df = pd.read_csv(path)
+        if not df.empty:
+            last = df.iloc[-1]
+            peak_idx = df["position_mtm"].idxmax()
+            meta = {
+                "n_days": len(df),
+                "last_date": str(last["date"]),
+                "position_mtm_end": float(last["position_mtm"]),
+                "cum_pnl_end": float(last["cum_pnl"]),
+                "peak_mtm": float(df["position_mtm"].max()),
+                "peak_mtm_date": str(df.loc[peak_idx, "date"]),
+            }
     if not meta:
-        path = ROOT / "reports" / "portfolio_daily.csv"
-        if path.exists():
-            df = pd.read_csv(path)
-            if not df.empty:
-                last = df.iloc[-1]
-                meta = {
-                    "last_date": str(last["date"]),
-                    "position_mtm_end": float(last["position_mtm"]),
-                    "cum_pnl_end": float(last["cum_pnl"]),
-                    "peak_mtm": float(df["position_mtm"].max()),
-                }
+        meta = up.get("daily") or {}
     if not meta:
         return []
 
-    scope = summary.get("portfolio_daily_note") or (
-        "仅股票 FIFO + PTR `amount_min`；含期权/行权请见下文 **统一 FIFO 组合**。"
-    )
     return [
         "",
         "## Pelosi 组合持仓与 PnL 时间序列",
         "",
-        "按 **FIFO 净多头** 重建每个交易日的 EOD 持仓：",
-        "- **持仓规模**：未平仓买入的 PTR 名义合计（成本）及按收盘价 mark-to-market 的市值；",
-        f"- **口径**：{scope}",
-        "- **每日 PnL**：各仍持有标的的日度价格变动 × 对应名义仓位，卖出日记入已实现收益；",
-        "- **累计 PnL**：全部交易日 daily PnL 的 running sum（整组合曲线）。",
+        "按 **统一 FIFO**（同一 underlying 一条队列，含已平仓配对）重建每个交易日的 EOD 组合：",
+        "- **股票**：`purchase` / `sale`；",
+        "- **期权**（按 **张数×100 股** 折算标的敞口，名义≈张数×100×标的收盘价）：",
+        "  - **买入 call** ≈ 买入 100 股/张；**卖出 call** 出队平多；",
+        "  - **买入 put** ≈ 卖出 100 股/张（先平多，无多则记空头）；**卖出 put** 平空；",
+        "  - **行权 `exercise`**：不单独入队（与买入 call 同为 100 股多头敞口，PnL 自 **买 call 日** 起算）；",
+        "- **持仓规模**：未平仓 lot 成本与 MTM（多头 + 空头绝对敞口）；",
+        "- **累计 PnL**：已实现（卖出/平空）+ 未实现盯市，含清仓后历史已实现。",
         "",
+        f"- FIFO 配对: **{fifo.get('n_matched_pairs', '—')}** 对（期权买入开多: **{fifo.get('n_matched_from_option', 0)}**，股票开多: **{fifo.get('n_matched_from_stock', 0)}**）",
+        f"- 无多头可配的卖出: **{fifo.get('n_prior_sells', 0)}** 笔",
+        f"- 未平仓 lot: **{fifo.get('n_open_lots', '—')}**",
         f"- 样本交易日: **{meta.get('n_days', '—')}** 天",
-        f"- 截止 **{meta.get('last_date', '—')}**：MTM 持仓 **{_fmt_usd(meta.get('position_mtm_end', 0))}**，"
-        f"累计 PnL **{_fmt_usd(meta.get('cum_pnl_end', 0))}**",
+        f"- 截止 **{meta.get('last_date', '—')}**：MTM **{_fmt_usd(meta.get('position_mtm_end', 0))}**，"
+        f"累计 PnL **{_fmt_usd(meta.get('cum_pnl_end', 0))}**（组合级 `cum_pnl`，**≠** 各 ticker `cum_pnl` 相加）",
         f"- 持仓 MTM 峰值: **{_fmt_usd(meta.get('peak_mtm', 0))}**（{meta.get('peak_mtm_date', '—')}）",
         "",
-        "明细: `reports/portfolio_daily.csv`",
+        "明细: `reports/unified_portfolio_daily.csv`（合并）、`reports/portfolio_daily.csv`（股票）、"
+        "`reports/options_portfolio_daily.csv`（期权）、`reports/unified_matched_lots.csv`",
         "",
     ]
 
@@ -739,14 +719,15 @@ def _md_report(
     lines += _methodology_notion_section(summary)
     lines += fig("08_disclosure_timeline")
     lines += fig("01_monthly_volume")
+    lines += fig("01_monthly_volume_options")
+    lines += fig("21_monthly_pnl_top3_bars")
     lines += fig("04_buy_sell")
     lines += _open_holdings_section(summary)
     lines += fig("17_open_holdings")
     lines += _portfolio_daily_section(summary)
     lines += fig("18_portfolio_timeseries")
-    lines += fig("20_daily_accumulated_pnl")
-    lines += fig("21_monthly_pnl_top3_bars")
-    lines += _unified_portfolio_section(summary, fig)
+    lines += fig("18_portfolio_timeseries_stock")
+    lines += fig("18_portfolio_timeseries_options")
     lines += [
         "",
         "## Cross-Check",
@@ -1077,7 +1058,15 @@ def _pdf_report(
         for chart in chart_paths:
             if not chart.exists():
                 continue
-            img = plt.imread(chart)
+            # PDF embedding: downscale large PNGs to keep PDF generation stable.
+            from PIL import Image
+
+            with Image.open(chart) as im:
+                max_w = 2200
+                if im.width > max_w:
+                    ratio = max_w / im.width
+                    im = im.resize((max_w, int(im.height * ratio)), Image.Resampling.LANCZOS)
+                img = np.asarray(im.convert("RGB"))
             fig, ax = plt.subplots(figsize=(11, 8.5))
             ax.imshow(img)
             ax.axis("off")
@@ -1359,6 +1348,17 @@ def _add_section_ids_and_toc(html: str) -> tuple[str, str]:
     return html, links
 
 
+# Wide charts with small text: embed at higher pixel width + quality (default 900px blurs labels).
+_EMBED_FIGURE_PROFILES: dict[str, dict[str, int | str]] = {
+    "01_monthly_volume.png": {"max_w": 3600, "quality": 95, "format": "jpeg"},
+    "01_monthly_volume_options.png": {"max_w": 3600, "quality": 95, "format": "jpeg"},
+    "18_portfolio_timeseries.png": {"max_w": 2400, "quality": 92, "format": "jpeg"},
+    "18_portfolio_timeseries_stock.png": {"max_w": 2400, "quality": 92, "format": "jpeg"},
+    "18_portfolio_timeseries_options.png": {"max_w": 2400, "quality": 92, "format": "jpeg"},
+    "21_monthly_pnl_top3_bars.png": {"max_w": 3600, "quality": 95, "format": "jpeg"},
+}
+
+
 def _embed_figure_src(html: str, figures_dir: Path, *, compress: bool = True) -> str:
     def _repl(match: re.Match) -> str:
         fname = match.group(1)
@@ -1370,13 +1370,22 @@ def _embed_figure_src(html: str, figures_dir: Path, *, compress: bool = True) ->
 
             from PIL import Image
 
+            profile = _EMBED_FIGURE_PROFILES.get(fname, {})
+            max_w = int(profile.get("max_w", 900))
+            quality = int(profile.get("quality", 72))
+            fmt = str(profile.get("format", "jpeg")).lower()
+
             with Image.open(path) as img:
-                max_w = 900
                 if img.width > max_w:
                     ratio = max_w / img.width
                     img = img.resize((max_w, int(img.height * ratio)), Image.Resampling.LANCZOS)
                 buf = BytesIO()
-                img.convert("RGB").save(buf, format="JPEG", quality=72, optimize=True)
+                if fmt == "png":
+                    img.save(buf, format="PNG", optimize=True)
+                    payload = buf.getvalue()
+                    b64 = base64.b64encode(payload).decode("ascii")
+                    return f'src="data:image/png;base64,{b64}"'
+                img.convert("RGB").save(buf, format="JPEG", quality=quality, optimize=True)
                 payload = buf.getvalue()
             b64 = base64.b64encode(payload).decode("ascii")
             return f'src="data:image/jpeg;base64,{b64}"'
@@ -1486,8 +1495,13 @@ def main() -> None:
     print(f"Wrote {md_path}")
 
     pdf_path = reports / "FINAL_REPORT.pdf"
-    _pdf_report(summary, xcheck, chart_paths, pdf_path, filing_stats)
-    print(f"Wrote {pdf_path}")
+    try:
+        _pdf_report(summary, xcheck, chart_paths, pdf_path, filing_stats)
+        print(f"Wrote {pdf_path}")
+    except TimeoutError as e:
+        # Large high-DPI charts can make PdfPages generation unstable on some systems.
+        # Keep MD/HTML outputs usable; PDF is optional.
+        print(f"[WARN] PDF generation timed out: {e}")
 
     html_path = reports / "FINAL_REPORT.html"
     mobile_path = reports / "FINAL_REPORT.mobile.html"

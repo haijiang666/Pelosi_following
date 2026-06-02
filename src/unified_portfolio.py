@@ -1,8 +1,9 @@
 """
 Unified underlying FIFO: stock + options (100 sh/contract) in one queue per ticker.
 
-Option purchase / exercise add long exposure on the underlying; stock sales match
-against those lots (fixes orphan sells when exposure came from options).
+Option exposure is anchored at **purchase** (call ≈ +100 sh, put ≈ −100 sh).
+**Exercise rows are ignored** — exercising a call is the same 100-share long
+already opened when the call was bought; PnL is marked from purchase date.
 """
 
 from __future__ import annotations
@@ -26,6 +27,31 @@ from .portfolio_snapshot import (
 
 IN_ACTIONS = frozenset({"purchase", "exercise"})
 OUT_ACTIONS = frozenset({"sale"})
+# Stock-only IN includes exercise; options use purchase/sale only (see build_unified_trades).
+STOCK_IN_ACTIONS = IN_ACTIONS
+
+
+def effective_fifo_side(row: pd.Series) -> str:
+    """
+    Map trades to long-queue IN / OUT for underlying FIFO.
+    Options: 1 call contract = +100 sh; 1 put contract = −100 sh
+    (buy put ≈ sell stock, sell put ≈ buy stock/cover short).
+    """
+    action = str(row.get("action", ""))
+    if str(row.get("instrument", "")).lower() != "option":
+        return "in" if action in STOCK_IN_ACTIONS else "out"
+    opt = str(row.get("option_type", "call")).lower()
+    if opt == "put":
+        return "out" if action == "purchase" else "in"
+    return "in" if action == "purchase" else "out"
+
+
+def _opens_short_on_out(row: pd.Series) -> bool:
+    return (
+        str(row.get("instrument", "")).lower() == "option"
+        and str(row.get("option_type", "call")).lower() == "put"
+        and str(row.get("action", "")) == "purchase"
+    )
 
 
 def _unified_sort_key(row: pd.Series) -> tuple:
@@ -42,18 +68,18 @@ def build_unified_trades(
     """Merge stock and option rows on underlying ticker with fifo_side in/out."""
     parts: list[pd.DataFrame] = []
     if stock is not None and not stock.empty:
-        s = stock[stock["ticker"].notna() & stock["action"].isin(IN_ACTIONS | OUT_ACTIONS)].copy()
+        s = stock[stock["ticker"].notna() & stock["action"].isin(STOCK_IN_ACTIONS | OUT_ACTIONS)].copy()
         s["instrument"] = "stock"
         parts.append(s)
     if options is not None and not options.empty:
-        o = options[options["ticker"].notna() & options["action"].isin(IN_ACTIONS | OUT_ACTIONS)].copy()
+        o = options[options["ticker"].notna() & options["action"].isin({"purchase", "sale"})].copy()
         o["instrument"] = "option"
         parts.append(o)
     if not parts:
         return pd.DataFrame()
     df = pd.concat(parts, ignore_index=True)
     df["transaction_date"] = pd.to_datetime(df["transaction_date"]).dt.normalize()
-    df["fifo_side"] = df["action"].map(lambda a: "in" if a in IN_ACTIONS else "out")
+    df["fifo_side"] = df.apply(effective_fifo_side, axis=1)
     df["_sort"] = df.apply(_unified_sort_key, axis=1)
     return df.sort_values("_sort").drop(columns="_sort").reset_index(drop=True)
 
@@ -67,6 +93,7 @@ class _OpenLot:
     instrument: str
     action: str
     trade_id: str
+    short: bool = False
 
 
 def _row_notional(row: pd.Series, prices: pd.DataFrame, day: pd.Timestamp) -> float:
@@ -78,13 +105,50 @@ def _row_notional(row: pd.Series, prices: pd.DataFrame, day: pd.Timestamp) -> fl
     return float(trade_notional(row)) if pd.notna(trade_notional(row)) else np.nan
 
 
+def _realized_pnl(lot: _OpenLot, exit_price: float) -> float:
+    if lot.entry_price <= 0:
+        return 0.0
+    if lot.short:
+        return lot.notional * (lot.entry_price / exit_price - 1.0)
+    return lot.notional * (exit_price / lot.entry_price - 1.0)
+
+
+def _unrealized_pnl(lot: _OpenLot, close: float) -> float:
+    if lot.entry_price <= 0:
+        return 0.0
+    if lot.short:
+        return lot.notional * (lot.entry_price / close - 1.0)
+    return lot.notional * (close / lot.entry_price - 1.0)
+
+
+def _mtm_value(lot: _OpenLot, close: float) -> float:
+    if lot.entry_price <= 0:
+        return lot.notional
+    if lot.short:
+        return lot.notional * lot.entry_price / close
+    return lot.notional * close / lot.entry_price
+
+
+def _new_lot(row: pd.Series, ticker: str, notional: float, day: pd.Timestamp, entry_price: float, *, short: bool) -> _OpenLot:
+    return _OpenLot(
+        ticker,
+        float(notional),
+        day,
+        float(entry_price),
+        str(row.get("instrument", "stock")),
+        str(row["action"]),
+        str(row["trade_id"]),
+        short=short,
+    )
+
+
 def fifo_match_unified(
     stock: pd.DataFrame,
     options: pd.DataFrame | None,
     price_cache: dict[str, pd.DataFrame] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    FIFO on underlying ticker across stock + options (in = purchase/exercise, out = sale).
+    FIFO on underlying ticker across stock + options (call=+100 sh, put=−100 sh per contract).
     """
     df = build_unified_trades(stock, options)
     if df.empty:
@@ -99,6 +163,7 @@ def fifo_match_unified(
         ordered["_sort"] = ordered.apply(_unified_sort_key, axis=1)
         ordered = ordered.sort_values("_sort").drop(columns="_sort")
         buy_queue: deque[_OpenLot] = deque()
+        short_queue: deque[_OpenLot] = deque()
         prices = price_cache.get(str(ticker)) if price_cache else None
 
         for _, row in ordered.iterrows():
@@ -116,18 +181,29 @@ def fifo_match_unified(
                     continue
                 if not entry_price or entry_price <= 0:
                     entry_price = float(row.get("strike") or 0) or 1.0
-                buy_queue.append(
-                    _OpenLot(
-                        str(ticker),
-                        float(notional),
-                        day,
-                        float(entry_price),
-                        str(row.get("instrument", "stock")),
-                        str(row["action"]),
-                        tid,
+                if short_queue and str(row.get("option_type", "")).lower() == "put" and row["action"] == "sale":
+                    lot = short_queue.popleft()
+                    days = int((day - lot.entry_date).days)
+                    lot_rows.append(
+                        {
+                            "ticker": ticker,
+                            "buy_trade_id": lot.trade_id,
+                            "sell_trade_id": tid,
+                            "buy_date": lot.entry_date,
+                            "sell_date": day,
+                            "holding_days": days,
+                            "buy_instrument": lot.instrument,
+                            "buy_action": lot.action,
+                            "sell_instrument": row.get("instrument", "stock"),
+                            "sell_action": row["action"],
+                            "buy_notional": lot.notional,
+                            "match_status": "matched",
+                        }
                     )
-                )
-                trade_holding[tid] = None
+                    trade_holding[tid] = float(days)
+                else:
+                    buy_queue.append(_new_lot(row, str(ticker), notional, day, entry_price, short=False))
+                    trade_holding[tid] = None
                 continue
 
             sell_date = day
@@ -151,6 +227,19 @@ def fifo_match_unified(
                     }
                 )
                 trade_holding[tid] = float(days)
+            elif _opens_short_on_out(row):
+                if prices is None or prices.empty:
+                    notional = trade_notional(row)
+                    entry_price = np.nan
+                else:
+                    notional = _row_notional(row, prices, day)
+                    entry_price = _close_on_date(prices, day)
+                if pd.isna(notional) or notional <= 0:
+                    continue
+                if not entry_price or entry_price <= 0:
+                    entry_price = float(row.get("strike") or 0) or 1.0
+                short_queue.append(_new_lot(row, str(ticker), notional, day, entry_price, short=True))
+                trade_holding[tid] = None
             else:
                 lot_rows.append(
                     {
@@ -185,6 +274,23 @@ def fifo_match_unified(
                     "sell_action": None,
                     "buy_notional": lot.notional,
                     "match_status": "open",
+                }
+            )
+        for lot in short_queue:
+            lot_rows.append(
+                {
+                    "ticker": ticker,
+                    "buy_trade_id": lot.trade_id,
+                    "sell_trade_id": None,
+                    "buy_date": lot.entry_date,
+                    "sell_date": pd.NaT,
+                    "holding_days": None,
+                    "buy_instrument": lot.instrument,
+                    "buy_action": lot.action,
+                    "sell_instrument": None,
+                    "sell_action": None,
+                    "buy_notional": lot.notional,
+                    "match_status": "open_short",
                 }
             )
 
@@ -243,7 +349,8 @@ def compute_unified_portfolio_daily(
         d = pd.Timestamp(row["transaction_date"]).normalize()
         by_day.setdefault(d, []).append(row)
 
-    queues: dict[str, deque[_OpenLot]] = {t: deque() for t in tickers}
+    long_queues: dict[str, deque[_OpenLot]] = {t: deque() for t in tickers}
+    short_queues: dict[str, deque[_OpenLot]] = {t: deque() for t in tickers}
     realized_pnl = 0.0
     prev_total_pnl = 0.0
     rows: list[dict[str, Any]] = []
@@ -257,31 +364,33 @@ def compute_unified_portfolio_daily(
             notional = _row_notional(row, prices, day)
             if pd.isna(notional) or notional <= 0:
                 continue
+            entry_price = _close_on_date(prices, day)
+            if not entry_price or entry_price <= 0:
+                entry_price = float(row.get("strike") or 0) or 1.0
 
             if row["fifo_side"] == "in":
-                entry_price = _close_on_date(prices, day)
-                if not entry_price or entry_price <= 0:
-                    entry_price = float(row.get("strike") or 0) or 1.0
-                queues.setdefault(ticker, deque()).append(
-                    _OpenLot(
-                        ticker,
-                        float(notional),
-                        day,
-                        float(entry_price),
-                        str(row.get("instrument", "stock")),
-                        str(row["action"]),
-                        str(row["trade_id"]),
+                sq = short_queues.setdefault(ticker, deque())
+                if sq and str(row.get("option_type", "")).lower() == "put" and row["action"] == "sale":
+                    lot = sq.popleft()
+                    exit_price = _close_on_date(prices, day)
+                    if exit_price:
+                        realized_pnl += _realized_pnl(lot, exit_price)
+                else:
+                    long_queues.setdefault(ticker, deque()).append(
+                        _new_lot(row, ticker, notional, day, entry_price, short=False)
                     )
-                )
                 continue
 
-            q = queues.get(ticker)
-            if not q:
-                continue
-            lot = q.popleft()
+            lq = long_queues.setdefault(ticker, deque())
             exit_price = _close_on_date(prices, day)
-            if exit_price and lot.entry_price > 0:
-                realized_pnl += lot.notional * (exit_price / lot.entry_price - 1.0)
+            if lq:
+                lot = lq.popleft()
+                if exit_price:
+                    realized_pnl += _realized_pnl(lot, exit_price)
+            elif _opens_short_on_out(row):
+                short_queues.setdefault(ticker, deque()).append(
+                    _new_lot(row, ticker, notional, day, entry_price, short=True)
+                )
 
         position_cost = 0.0
         position_mtm = 0.0
@@ -295,20 +404,20 @@ def compute_unified_portfolio_daily(
         n_open_option = 0
         held_tickers: set[str] = set()
 
-        for ticker, q in queues.items():
+        for ticker in tickers:
             prices = price_cache.get(ticker)
             if prices is None or prices.empty:
                 continue
             close = _close_on_date(prices, day)
             if not close or close <= 0:
                 continue
-            for lot in q:
+            for lot in list(long_queues.get(ticker, deque())) + list(short_queues.get(ticker, deque())):
                 if lot.entry_price <= 0:
                     continue
-                mtm = lot.notional * close / lot.entry_price
+                mtm = _mtm_value(lot, close)
                 position_cost += lot.notional
                 position_mtm += mtm
-                unrealized_pnl += lot.notional * (close / lot.entry_price - 1.0)
+                unrealized_pnl += _unrealized_pnl(lot, close)
                 n_open_lots += 1
                 held_tickers.add(ticker)
                 if lot.instrument == "option":
@@ -377,7 +486,8 @@ def compute_unified_ticker_daily_pnl(
         d = pd.Timestamp(row["transaction_date"]).normalize()
         by_day.setdefault(d, []).append(row)
 
-    queues: dict[str, deque[_OpenLot]] = {t: deque() for t in tickers}
+    long_queues: dict[str, deque[_OpenLot]] = {t: deque() for t in tickers}
+    short_queues: dict[str, deque[_OpenLot]] = {t: deque() for t in tickers}
     realized: dict[str, float] = {t: 0.0 for t in tickers}
     prev_total: dict[str, float] = {t: 0.0 for t in tickers}
     rows: list[dict[str, Any]] = []
@@ -391,44 +501,46 @@ def compute_unified_ticker_daily_pnl(
             notional = _row_notional(row, prices, day)
             if pd.isna(notional) or notional <= 0:
                 continue
+            entry_price = _close_on_date(prices, day)
+            if not entry_price or entry_price <= 0:
+                entry_price = float(row.get("strike") or 0) or 1.0
 
             if row["fifo_side"] == "in":
-                entry_price = _close_on_date(prices, day)
-                if not entry_price or entry_price <= 0:
-                    entry_price = float(row.get("strike") or 0) or 1.0
-                queues.setdefault(ticker, deque()).append(
-                    _OpenLot(
-                        ticker,
-                        float(notional),
-                        day,
-                        float(entry_price),
-                        str(row.get("instrument", "stock")),
-                        str(row["action"]),
-                        str(row["trade_id"]),
+                sq = short_queues.setdefault(ticker, deque())
+                if sq and str(row.get("option_type", "")).lower() == "put" and row["action"] == "sale":
+                    lot = sq.popleft()
+                    exit_price = _close_on_date(prices, day)
+                    if exit_price:
+                        realized[ticker] = realized.get(ticker, 0.0) + _realized_pnl(lot, exit_price)
+                else:
+                    long_queues.setdefault(ticker, deque()).append(
+                        _new_lot(row, ticker, notional, day, entry_price, short=False)
                     )
-                )
                 continue
 
-            q = queues.get(ticker)
-            if not q:
-                continue
-            lot = q.popleft()
+            lq = long_queues.setdefault(ticker, deque())
             exit_price = _close_on_date(prices, day)
-            if exit_price and lot.entry_price > 0:
-                realized[ticker] = realized.get(ticker, 0.0) + lot.notional * (
-                    exit_price / lot.entry_price - 1.0
+            if lq:
+                lot = lq.popleft()
+                if exit_price:
+                    realized[ticker] = realized.get(ticker, 0.0) + _realized_pnl(lot, exit_price)
+            elif _opens_short_on_out(row):
+                short_queues.setdefault(ticker, deque()).append(
+                    _new_lot(row, ticker, notional, day, entry_price, short=True)
                 )
 
-        active = set(queues.keys()) | set(realized.keys())
+        active = set(tickers) | set(realized.keys())
         for ticker in active:
             prices = price_cache.get(ticker)
             unrealized = 0.0
             if prices is not None and not prices.empty:
                 close = _close_on_date(prices, day)
                 if close and close > 0:
-                    for lot in queues.get(ticker, deque()):
+                    for lot in list(long_queues.get(ticker, deque())) + list(
+                        short_queues.get(ticker, deque())
+                    ):
                         if lot.entry_price > 0:
-                            unrealized += lot.notional * (close / lot.entry_price - 1.0)
+                            unrealized += _unrealized_pnl(lot, close)
             total = realized.get(ticker, 0.0) + unrealized
             daily = total - prev_total.get(ticker, 0.0)
             prev_total[ticker] = total

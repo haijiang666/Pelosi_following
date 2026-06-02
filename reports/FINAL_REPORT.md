@@ -1,6 +1,6 @@
 # Pelosi 股票/ETF 交易分析报告
 
-> 生成时间: 2026-06-02 22:17 · House STOCK Act PTR · 2023-03-09 起
+> 生成时间: 2026-06-02 23:38 · House STOCK Act PTR · 2023-03-09 起
 
 ## 数据范围
 
@@ -54,7 +54,7 @@
 |------|------|------------|
 | **Horizon timing** | 无 FIFO；每笔独立事件 | 合并账 **37** 笔（股票 **23** + 期权 **14**） |
 | **股票 FIFO** | ticker；仅 purchase/sale | 已实现用 `min(买,卖) amount_min`，**≠** horizon |
-| **统一 FIFO** | purchase/exercise 入、sale 出 | `open_holdings_top10.csv` 基于统一队列 |
+| **统一 FIFO** | 股票 purchase/exercise 入；期权仅 **purchase/sale**（行权不入队） | `open_holdings_top10.csv` |
 | **`portfolio_daily`** | 仅股票 FIFO + PTR | 与统一 MTM 可能差一个数量级 |
 
 - **金额缺失**：仍有 **10** 笔股票无 `amount_min`，不进 NW 表（期权可无 PTR 金额仍靠张数×价计价）。
@@ -68,8 +68,20 @@
 
 
 <figure class="report-fig">
-<img src="figures/01_monthly_volume.png" alt="交易时间线（按日/周）：名义金额为主；柱顶标注 Top3 公司 buy/sell 名义">
-<figcaption>交易时间线（按日/周）：名义金额为主；柱顶标注 Top3 公司 buy/sell 名义</figcaption>
+<img src="figures/01_monthly_volume.png" alt="股票/ETF 交易时间线（按日/周）：名义金额为主；柱顶 Top3 buy/sell">
+<figcaption>股票/ETF 交易时间线（按日/周）：名义金额为主；柱顶 Top3 buy/sell</figcaption>
+</figure>
+
+
+<figure class="report-fig">
+<img src="figures/01_monthly_volume_options.png" alt="期权交易时间线（按日/周）：经济名义（张数×100×标的价）；柱顶 Top3">
+<figcaption>期权交易时间线（按日/周）：经济名义（张数×100×标的价）；柱顶 Top3</figcaption>
+</figure>
+
+
+<figure class="report-fig">
+<img src="figures/21_monthly_pnl_top3_bars.png" alt="每月 PnL（2024 起）：柱上标注 Top3 股票代码，灰色段=其他">
+<figcaption>每月 PnL（2024 起）：柱上标注 Top3 股票代码，灰色段=其他</figcaption>
 </figure>
 
 
@@ -107,55 +119,40 @@ Horizon 收益以 **最早一笔未平买入** 的 anchor 日计（合并账用 
 
 ## Pelosi 组合持仓与 PnL 时间序列
 
-按 **FIFO 净多头** 重建每个交易日的 EOD 持仓：
-- **持仓规模**：未平仓买入的 PTR 名义合计（成本）及按收盘价 mark-to-market 的市值；
-- **口径**：仅股票 FIFO + PTR amount_min；期权/行权敞口见 unified_portfolio_daily
-- **每日 PnL**：各仍持有标的的日度价格变动 × 对应名义仓位，卖出日记入已实现收益；
-- **累计 PnL**：全部交易日 daily PnL 的 running sum（整组合曲线）。
+按 **统一 FIFO**（同一 underlying 一条队列，含已平仓配对）重建每个交易日的 EOD 组合：
+- **股票**：`purchase` / `sale`；
+- **期权**（按 **张数×100 股** 折算标的敞口，名义≈张数×100×标的收盘价）：
+  - **买入 call** ≈ 买入 100 股/张；**卖出 call** 出队平多；
+  - **买入 put** ≈ 卖出 100 股/张（先平多，无多则记空头）；**卖出 put** 平空；
+  - **行权 `exercise`**：不单独入队（与买入 call 同为 100 股多头敞口，PnL 自 **买 call 日** 起算）；
+- **持仓规模**：未平仓 lot 成本与 MTM（多头 + 空头绝对敞口）；
+- **累计 PnL**：已实现（卖出/平空）+ 未实现盯市，含清仓后历史已实现。
 
-- 样本交易日: **778** 天
-- 截止 **2026-04-23**：MTM 持仓 **$2.1M**，累计 PnL **$3.9M**
-- 持仓 MTM 峰值: **$7.4M**（2024-12-24）
-
-明细: `reports/portfolio_daily.csv`
-
-
-<figure class="report-fig">
-<img src="figures/18_portfolio_timeseries.png" alt="组合持仓规模与累计 PnL 随时间变化（仅股票 FIFO 日度）">
-<figcaption>组合持仓规模与累计 PnL 随时间变化（仅股票 FIFO 日度）</figcaption>
-</figure>
-
-
-<figure class="report-fig">
-<img src="figures/20_daily_accumulated_pnl.png" alt="每个交易日累计 PnL（FIFO 盯市，直至分析截止日）">
-<figcaption>每个交易日累计 PnL（FIFO 盯市，直至分析截止日）</figcaption>
-</figure>
-
-
-<figure class="report-fig">
-<img src="figures/21_monthly_pnl_top3_bars.png" alt="每月 PnL（2024 起）：当月 |PnL| 前三股票 + 其他（堆叠柱）">
-<figcaption>每月 PnL（2024 起）：当月 |PnL| 前三股票 + 其他（堆叠柱）</figcaption>
-</figure>
-
-
-## 统一 FIFO 组合（股票 + 期权/行权，按标的）
-
-同一 **underlying ticker** 一条 FIFO 队列：
-- **入队**：股票 `purchase`、期权 `purchase`（按 张数×100×标的价 计名义）、`exercise`（行权交付股份）；
-- **出队**：股票 `sale`、期权 `sale`；
-- 这样 NVDA/AAPL 等「先买 call / 行权、后卖股」可与后续 **sell** 配对，减少 `prior_position` 孤儿卖单。
-
-- FIFO 配对: **9** 对（其中买入来自期权/行权: **5**，来自股票: **4**）
-- 仍无买入匹配的卖出: **3** 笔
+- FIFO 配对: **9** 对（期权买入开多: **5**，股票开多: **4**）
+- 无多头可配的卖出: **3** 笔
 - 未平仓 lot: **18**
-- 截止 **2026-04-23**：MTM **$30.1M**，累计 PnL **$14.3M**
+- 样本交易日: **739** 天
+- 截止 **2026-02-26**：MTM **$5.8M**，累计 PnL **$7.4M**（组合级 `cum_pnl`，**≠** 各 ticker `cum_pnl` 相加）
+- 持仓 MTM 峰值: **$13.1M**（2025-11-03）
 
-明细: `reports/unified_matched_lots.csv`，`reports/unified_portfolio_daily.csv`
+明细: `reports/unified_portfolio_daily.csv`（合并）、`reports/portfolio_daily.csv`（股票）、`reports/options_portfolio_daily.csv`（期权）、`reports/unified_matched_lots.csv`
 
 
 <figure class="report-fig">
-<img src="figures/19_unified_portfolio_timeseries.png" alt="统一 FIFO（股票+期权/行权）：仓位与累计 PnL 随时间">
-<figcaption>统一 FIFO（股票+期权/行权）：仓位与累计 PnL 随时间</figcaption>
+<img src="figures/18_portfolio_timeseries.png" alt="组合：持仓名义（上）+ 组合级累计 PnL（下，unified_portfolio_daily）">
+<figcaption>组合：持仓名义（上）+ 组合级累计 PnL（下，unified_portfolio_daily）</figcaption>
+</figure>
+
+
+<figure class="report-fig">
+<img src="figures/18_portfolio_timeseries_stock.png" alt="股票单独：持仓名义 + 累计 PnL（FIFO）">
+<figcaption>股票单独：持仓名义 + 累计 PnL（FIFO）</figcaption>
+</figure>
+
+
+<figure class="report-fig">
+<img src="figures/18_portfolio_timeseries_options.png" alt="期权单独：持仓名义 + 累计 PnL（FIFO，100 股/张）">
+<figcaption>期权单独：持仓名义 + 累计 PnL（FIFO，100 股/张）</figcaption>
 </figure>
 
 
@@ -432,10 +429,16 @@ ticker  trades  buys  sales  total_notional  avg_post_5d  avg_post_1d
 - **解析行数**: 14（**7** 个标的）
 - **含金额行**: 7 / 17
 
-> **收益口径**：Horizon PnL 用 **标的股票** 价格计算（非期权合约市价）。 **买入/行权 sign=+1**，**卖出 sign=−1**（跟单方向）。 行权 `exercise` 在 FIFO 中视为平仓 long call。
+> **收益口径**：Horizon PnL 用 **标的股票** 价格计算（非期权合约市价）。 **买入/行权 sign=+1**，**卖出 sign=−1**（跟单方向）。 组合 FIFO / 日度 PnL **不以行权日开平仓**（call 敞口自 **买入 call** 起按 100 股盯市；行权仅交付股份）。
 
 - FIFO 配对: **0** 对，中位持仓 **0** 天
 - 明细: `reports/options_raw.csv`, `reports/options_matched_lots.csv`
+
+
+<figure class="report-fig">
+<img src="figures/opt_03_top_tickers.png" alt="期权 Top Ticker：options timing 经济名义合计">
+<figcaption>期权 Top Ticker：options timing 经济名义合计</figcaption>
+</figure>
 
 ### O1. 期权 timing（锚点 = 交易发生日，标的价）
 

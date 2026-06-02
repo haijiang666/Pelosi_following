@@ -340,6 +340,11 @@ def main() -> int:
     unified_daily = compute_unified_portfolio_daily(
         tradable, opt_tradable if not opt_tradable.empty else None, merged_prices, settings
     )
+    options_daily = pd.DataFrame()
+    if not opt_tradable.empty:
+        options_daily = compute_unified_portfolio_daily(None, opt_tradable, merged_prices, settings)
+        if not options_daily.empty:
+            options_daily.to_csv(reports / "options_portfolio_daily.csv", index=False)
     unified_matched.to_csv(reports / "unified_matched_lots.csv", index=False)
     unified_all_lots.to_csv(reports / "unified_all_lots.csv", index=False)
     unified_by_ticker.to_csv(reports / "unified_holdings_by_ticker.csv", index=False)
@@ -374,8 +379,9 @@ def main() -> int:
     portfolio_daily = compute_portfolio_daily_timeseries(tradable, price_cache, settings)
     portfolio_daily.to_csv(reports / "portfolio_daily.csv", index=False)
     summary["portfolio_daily"] = portfolio_daily_summary_records(portfolio_daily)
-    summary["portfolio_daily_note"] = "仅股票 FIFO + PTR amount_min；期权/行权敞口见 unified_portfolio_daily"
-    pnl_daily_primary = unified_daily if not unified_daily.empty else portfolio_daily
+    summary["portfolio_daily_note"] = (
+        "报告主图使用 unified_portfolio_daily（股票+期权统一 FIFO，期权按 100 股/张；call 多 put 空）"
+    )
     ticker_daily_pnl = compute_unified_ticker_daily_pnl(
         tradable, opt_tradable if not opt_tradable.empty else None, merged_prices, settings
     )
@@ -401,9 +407,9 @@ def main() -> int:
         option_return_analysis=opt_ret,
         combined_return_analysis=combined_ret if combined_ret else None,
         unified_portfolio_daily=unified_daily if not unified_daily.empty else None,
+        options_portfolio_daily=options_daily if not options_daily.empty else None,
         price_cache=merged_prices,
         ticker_daily_pnl=ticker_daily_pnl if not ticker_daily_pnl.empty else None,
-        pnl_daily_for_accum=pnl_daily_primary if not pnl_daily_primary.empty else None,
     )
     if opt_ret is not None and not opt_tradable.empty:
         from src.visualizations import generate_option_charts

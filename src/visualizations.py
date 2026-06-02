@@ -10,21 +10,51 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from .instrument_notional import BUY_ACTIONS, economic_notional, pie_notional, trade_notional, trade_side
+from .instrument_notional import BUY_ACTIONS, economic_notional, is_option_row, pie_notional, trade_notional, trade_side
 from .prices import price_on_date
 
 sns.set_theme(style="whitegrid", palette="muted")
 plt.rcParams.update({"figure.dpi": 120, "savefig.dpi": 150, "font.size": 10})
 
+
+def _setup_matplotlib_fonts() -> None:
+    """Prefer CJK-capable fonts so legends/labels do not render as empty boxes."""
+    from matplotlib import font_manager
+
+    candidates = [
+        "PingFang SC",
+        "Arial Unicode MS",
+        "Hiragino Sans GB",
+        "Heiti SC",
+        "STHeiti",
+        "Microsoft YaHei",
+        "SimHei",
+        "Noto Sans CJK SC",
+        "DejaVu Sans",
+    ]
+    available = {f.name for f in font_manager.fontManager.ttflist}
+    for name in candidates:
+        if name in available:
+            plt.rcParams["font.sans-serif"] = [name, "DejaVu Sans"]
+            break
+    plt.rcParams["axes.unicode_minus"] = False
+
+
+_setup_matplotlib_fonts()
+
 _ACTION_COLORS = {"purchase": "#2ecc71", "sale": "#e74c3c", "exchange": "#f39c12"}
 _ACTION_LABELS = {"purchase": "Buy", "sale": "Sell", "exchange": "Exchange"}
 
 
-def _save(fig: plt.Figure, out_dir: Path, name: str) -> Path:
+def _save(fig: plt.Figure, out_dir: Path, name: str, *, dpi: int | None = None) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{name}.png"
     fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
+    kwargs: dict = {"bbox_inches": "tight"}
+    if dpi is not None:
+        kwargs["dpi"] = dpi
+        kwargs["facecolor"] = "white"
+    fig.savefig(path, **kwargs)
     plt.close(fig)
     return path
 
@@ -44,8 +74,28 @@ def _mpl_label(s: str) -> str:
     return s.replace("$", r"\$")
 
 
-def _with_notional(trades: pd.DataFrame, pelosi_df: pd.DataFrame | None = None) -> pd.DataFrame:
+def _combined_legend(primary_ax, *extra_axes, **kwargs) -> None:
+    """Merge legends from twin axes; drop blank labels (missing-glyph placeholders)."""
+    handles: list = []
+    labels: list[str] = []
+    for ax in (primary_ax, *extra_axes):
+        h, lab = ax.get_legend_handles_labels()
+        for handle, text in zip(h, lab):
+            if text and str(text).strip():
+                handles.append(handle)
+                labels.append(str(text))
+    if handles:
+        primary_ax.legend(handles, labels, **kwargs)
+
+
+def _with_notional(
+    trades: pd.DataFrame,
+    pelosi_df: pd.DataFrame | None = None,
+    price_cache: dict[str, pd.DataFrame] | None = None,
+) -> pd.DataFrame:
     df = trades.copy()
+    df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+    df["disclosure_date"] = pd.to_datetime(df["disclosure_date"])
     if pelosi_df is not None and "notional" in pelosi_df.columns and "trade_id" in pelosi_df.columns:
         nmap = pelosi_df.drop_duplicates("trade_id").set_index("trade_id")["notional"]
         if "trade_id" in df.columns:
@@ -54,8 +104,22 @@ def _with_notional(trades: pd.DataFrame, pelosi_df: pd.DataFrame | None = None) 
             df["notional"] = df.apply(trade_notional, axis=1)
     elif "notional" not in df.columns:
         df["notional"] = df.apply(trade_notional, axis=1)
-    df["transaction_date"] = pd.to_datetime(df["transaction_date"])
-    df["disclosure_date"] = pd.to_datetime(df["disclosure_date"])
+
+    if price_cache:
+        def _econ(row: pd.Series) -> float:
+            base = row.get("notional")
+            if pd.notna(base) and float(base) > 0 and not is_option_row(row):
+                return float(base)
+            ticker = row.get("ticker")
+            prices = price_cache.get(str(ticker)) if ticker is not None else None
+            p0 = price_on_date(prices, row["transaction_date"]) if prices is not None and not prices.empty else None
+            n = economic_notional(row, anchor_price=p0)
+            if pd.notna(n) and n > 0:
+                return float(n)
+            return float(base) if pd.notna(base) else np.nan
+
+        df["notional"] = df.apply(_econ, axis=1)
+
     return df.dropna(subset=["notional"])
 
 
@@ -107,9 +171,11 @@ def _annotate_top_tickers(
     top_n: int = 3,
     min_notional: float = 0.0,
     ymax: float = 1.0,
+    *,
+    fontsize: float = 11.5,
 ) -> None:
     """Place top-ticker labels on each bar with dark text on white box."""
-    bbox = dict(boxstyle="round,pad=0.35", facecolor="white", edgecolor="#7f8c8d", alpha=0.97, linewidth=0.8)
+    bbox = dict(boxstyle="round,pad=0.45", facecolor="white", edgecolor="#7f8c8d", alpha=0.97, linewidth=0.9)
     for period, xpos, h in zip(periods, x_positions, heights):
         if h < min_notional:
             continue
@@ -120,14 +186,14 @@ def _annotate_top_tickers(
         text = _mpl_label("\n".join(lines))
         ax.text(
             xpos,
-            h + ymax * 0.006,
+            h + ymax * 0.008,
             text,
             ha="center",
             va="bottom",
-            fontsize=9.5,
+            fontsize=fontsize,
             fontweight="bold",
             color="#1a1a1a",
-            linespacing=1.15,
+            linespacing=1.2,
             bbox=bbox,
             zorder=10,
             clip_on=False,
@@ -138,10 +204,18 @@ def plot_trade_volume_monthly(
     trades: pd.DataFrame,
     out_dir: Path,
     pelosi_df: pd.DataFrame | None = None,
-) -> Path:
+    *,
+    prefix: str = "01_monthly_volume",
+    segment_label: str = "Stock/ETF",
+    price_cache: dict[str, pd.DataFrame] | None = None,
+) -> Path | None:
     """Timeline of trade count + notional (day/week); top-3 trades labeled per bar."""
-    df = _with_notional(trades, pelosi_df)
+    if trades is None or trades.empty:
+        return None
+    df = _with_notional(trades, pelosi_df, price_cache=price_cache)
     df = df[df["action"].isin(["purchase", "sale"])].copy()
+    if df.empty:
+        return None
     gran, gran_label = _pick_granularity(df["transaction_date"])
     df["_period"] = _period_start(df["transaction_date"], gran)
     periods = sorted(df["_period"].unique())
@@ -166,9 +240,12 @@ def plot_trade_volume_monthly(
     counts = np.array(buy_n) + np.array(sell_n)
     totals_not = np.array(buy_not) + np.array(sell_not)
     ymax = float(totals_not.max()) if len(totals_not) else 1.0
+    n = len(periods)
 
-    fig_w = max(18.0, len(periods) * 0.52)
-    fig, ax1 = plt.subplots(figsize=(fig_w, 8))
+    fig_w = max(20.0, min(52.0, n * 0.88))
+    fig_h = max(9.5, min(13.0, 8.5 + n * 0.025))
+    label_fs = 12.0 if n <= 36 else 10.5
+    fig, ax1 = plt.subplots(figsize=(fig_w, fig_h), dpi=120)
     ax2 = ax1.twinx()
     ax1.bar(x, buy_not, width, label=f"Buy notional ({sum(buy_n):,} trades)", color=_ACTION_COLORS["purchase"], alpha=0.92)
     ax1.bar(
@@ -180,7 +257,7 @@ def plot_trade_volume_monthly(
         color=_ACTION_COLORS["sale"],
         alpha=0.92,
     )
-    ax2.plot(x, counts, color="#34495e", marker="o", lw=1.5, ms=3, label="Trade count", zorder=5)
+    ax2.plot(x, counts, color="#34495e", marker="o", lw=2.0, ms=5, label="Trade count", zorder=5)
 
     _annotate_top_tickers(
         ax1,
@@ -191,25 +268,29 @@ def plot_trade_volume_monthly(
         top_n=3,
         min_notional=max(200_000.0, ymax * 0.03),
         ymax=ymax,
+        fontsize=label_fs,
     )
 
     ax1.set_xticks(x)
-    ax1.set_xticklabels([pd.Timestamp(p).strftime("%Y-%m-%d") for p in periods], rotation=45, ha="right")
-    ax1.set_ylabel("Notional ($) — primary", fontweight="bold")
-    ax2.set_ylabel("Trade count")
+    ax1.set_xticklabels([pd.Timestamp(p).strftime("%Y-%m-%d") for p in periods], rotation=45, ha="right", fontsize=10)
+    ax1.set_ylabel("Notional ($) — primary", fontweight="bold", fontsize=12)
+    ax2.set_ylabel("Trade count", fontsize=12)
+    ax1.tick_params(axis="y", labelsize=11)
+    ax2.tick_params(axis="y", labelsize=11)
     ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: _fmt_notional_short(v)))
     ax1.set_title(
         _mpl_label(
-            f"Trade Volume by {gran_label.title()} · Total {_fmt_notional_short(total_notional)} notional · {total_trades:,} trades"
-        )
+            f"{segment_label} · Trade Volume by {gran_label.title()} · "
+            f"Total {_fmt_notional_short(total_notional)} · {total_trades:,} trades"
+        ),
+        fontsize=14,
+        pad=12,
     )
-    ax1.set_xlabel(f"Period start ({gran_label}) · on-bar labels: top-3 tickers (buy/sell notional)")
-    h1, l1 = ax1.get_legend_handles_labels()
-    h2, l2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, l1 + l2, loc="upper left", fontsize=8)
-    ax1.set_ylim(0, ymax * 1.10)
-    fig.subplots_adjust(top=0.92, bottom=0.14, right=0.92)
-    return _save(fig, out_dir, "01_monthly_volume")
+    ax1.set_xlabel(f"Period start ({gran_label}) · on-bar labels: top-3 tickers (buy/sell notional)", fontsize=11)
+    _combined_legend(ax1, ax2, loc="upper left", fontsize=10)
+    ax1.set_ylim(0, ymax * 1.28)
+    fig.subplots_adjust(top=0.90, bottom=0.16, right=0.90)
+    return _save(fig, out_dir, prefix, dpi=600)
 
 
 def plot_reveal_lag(returns_df: pd.DataFrame, out_dir: Path) -> Path:
@@ -290,7 +371,7 @@ def _buy_sell_bar_frame(
 _BUY_SELL_SEGMENTS: list[tuple[str, str, str, str]] = [
     ("stock", "purchase", "Stock Buy", "#27ae60"),
     ("stock", "sale", "Stock Sell", "#c0392b"),
-    ("option", "purchase", "Option Buy\n(incl. exercise)", "#2ecc71"),
+    ("option", "purchase", "Option Buy (incl. exercise)", "#2ecc71"),
     ("option", "sale", "Option Sell", "#e74c3c"),
 ]
 
@@ -551,9 +632,7 @@ def plot_disclosure_timeline(trades: pd.DataFrame, out_dir: Path, pelosi_df: pd.
         )
     )
     ax1.set_xlabel("Disclosure date")
-    h1, l1 = ax1.get_legend_handles_labels()
-    h2, l2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, l1 + l2, loc="upper right", fontsize=8)
+    _combined_legend(ax1, ax2, loc="upper right", fontsize=8)
     ax1.set_ylim(0, by_disc["notional"].max() * 1.22 if len(by_disc) else 1)
     return _save(fig, out_dir, "08_disclosure_timeline")
 
@@ -794,34 +873,6 @@ def _pnl_scale(pnl: pd.Series) -> tuple[float, str]:
     return 1.0, "$"
 
 
-def plot_daily_accumulated_pnl(
-    daily: pd.DataFrame,
-    out_dir: Path,
-    title: str,
-    prefix: str = "20_daily_accumulated_pnl",
-) -> Path | None:
-    """Cumulative portfolio PnL on each trading day through analysis end."""
-    if daily.empty or "cum_pnl" not in daily.columns:
-        return None
-    df = daily.copy()
-    df["date"] = pd.to_datetime(df["date"])
-    df = df.sort_values("date")
-    scale, unit = _pnl_scale(df["cum_pnl"])
-    fig, ax = plt.subplots(figsize=(12, 5))
-    y = df["cum_pnl"] / scale
-    ax.plot(df["date"], y, color="#1e4d8c", lw=2.2, label="累计 PnL")
-    ax.fill_between(df["date"], 0, y, where=df["cum_pnl"] >= 0, alpha=0.12, color="#2ecc71")
-    ax.fill_between(df["date"], 0, y, where=df["cum_pnl"] < 0, alpha=0.12, color="#e74c3c")
-    ax.axhline(0, color="gray", lw=0.8)
-    ax.set_title(_mpl_label(title))
-    ax.set_xlabel("Date")
-    ax.set_ylabel(f"Accumulated PnL ({unit})")
-    ax.legend(loc="upper left")
-    ax.grid(True, alpha=0.3)
-    plt.xticks(rotation=45, ha="right")
-    return _save(fig, out_dir, prefix)
-
-
 def _monthly_top3_other_rows(
     ticker_daily: pd.DataFrame,
     start: str | pd.Timestamp = "2024-01-01",
@@ -863,6 +914,32 @@ def _monthly_top3_other_rows(
     return pd.DataFrame(records)
 
 
+def _annotate_bar_segment(
+    ax,
+    x: float,
+    bottom: float,
+    height: float,
+    label: str,
+    *,
+    text_color: str = "#1a1a1a",
+    min_height: float,
+    fontsize: float = 10.5,
+) -> None:
+    if not label or abs(height) < min_height:
+        return
+    ax.text(
+        x,
+        bottom + height / 2.0,
+        label,
+        ha="center",
+        va="center",
+        fontsize=fontsize,
+        fontweight="bold",
+        color=text_color,
+        clip_on=False,
+    )
+
+
 def plot_monthly_pnl_top3_bars(
     ticker_daily: pd.DataFrame,
     out_dir: Path,
@@ -870,7 +947,7 @@ def plot_monthly_pnl_top3_bars(
     prefix: str = "21_monthly_pnl_top3_bars",
     start: str | pd.Timestamp = "2024-01-01",
 ) -> Path | None:
-    """Stacked monthly PnL bars (from 2024): top-3 |PnL| tickers + 其他."""
+    """Stacked monthly PnL (from 2024): segment labels = top-3 tickers; gray = Other."""
     wide = _monthly_top3_other_rows(ticker_daily, start=start)
     if wide.empty:
         return None
@@ -891,30 +968,47 @@ def plot_monthly_pnl_top3_bars(
         pd.concat([wide["pnl_1"], wide["pnl_2"], wide["pnl_3"], wide["other"]], ignore_index=True)
     )
     n = len(wide)
-    fig_w = max(10, min(22, n * 0.55))
-    fig, ax = plt.subplots(figsize=(fig_w, 5.5))
+    # Wide canvas + high DPI export so bar labels stay readable when zoomed in reports.
+    fig_w = max(16.0, min(40.0, n * 1.05))
+    fig_h = max(8.5, min(11.0, 7.5 + n * 0.04))
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h), dpi=120)
     x = np.arange(n)
-    bar_w = 0.72
-    b1 = wide["pnl_1"] / scale
-    b2 = wide["pnl_2"] / scale
-    b3 = wide["pnl_3"] / scale
-    bo = wide["other"] / scale
-    colors = ["#2980b9", "#27ae60", "#e67e22", "#95a5a6"]
-    ax.bar(x, b1, bar_w, label="Top 1", color=colors[0])
-    ax.bar(x, b2, bar_w, bottom=b1, label="Top 2", color=colors[1])
-    ax.bar(x, b3, bar_w, bottom=b1 + b2, label="Top 3", color=colors[2])
-    ax.bar(x, bo, bar_w, bottom=b1 + b2 + b3, label="其他", color=colors[3])
+    bar_w = 0.78
+    seg_fs = 11.0 if n <= 20 else 10.0
+    colors = ["#2980b9", "#27ae60", "#e67e22", "#bdc3c7"]
+    min_seg = max(0.02, float(np.abs(wide[["pnl_1", "pnl_2", "pnl_3", "other"]].values).max()) / scale * 0.08)
+
+    for i in range(n):
+        row = wide.iloc[i]
+        v1, v2, v3, vo = row["pnl_1"] / scale, row["pnl_2"] / scale, row["pnl_3"] / scale, row["other"] / scale
+        btm = 0.0
+        for val, col, tick in (
+            (v1, colors[0], str(row["ticker_1"]).strip()),
+            (v2, colors[1], str(row["ticker_2"]).strip()),
+            (v3, colors[2], str(row["ticker_3"]).strip()),
+        ):
+            if val == 0:
+                continue
+            ax.bar(i, val, bar_w, bottom=btm, color=col, edgecolor="white", linewidth=0.5)
+            _annotate_bar_segment(ax, i, btm, val, tick, min_height=min_seg, fontsize=seg_fs)
+            btm += val
+        if vo != 0:
+            ax.bar(i, vo, bar_w, bottom=btm, color=colors[3], edgecolor="white", linewidth=0.5)
+            _annotate_bar_segment(
+                ax, i, btm, vo, "其他", text_color="#4a5568", min_height=min_seg, fontsize=seg_fs
+            )
+
     ax.axhline(0, color="gray", lw=0.8)
     labels = pd.to_datetime(wide["month"]).dt.strftime("%Y-%m")
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=45, ha="right")
-    ax.set_title(_mpl_label(title))
-    ax.set_xlabel("Month")
-    ax.set_ylabel(f"Monthly PnL ({unit})")
-    ax.legend(loc="upper left", fontsize=9)
+    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=11)
+    ax.set_title(_mpl_label(title), fontsize=14, pad=12)
+    ax.set_xlabel("Month (2024+)", fontsize=12)
+    ax.set_ylabel(f"Monthly PnL ({unit})", fontsize=12)
+    ax.tick_params(axis="y", labelsize=11)
     ax.grid(True, axis="y", alpha=0.25)
     fig.tight_layout()
-    return _save(fig, out_dir, prefix)
+    return _save(fig, out_dir, prefix, dpi=600)
 
 
 def plot_portfolio_daily_timeseries(
@@ -922,8 +1016,11 @@ def plot_portfolio_daily_timeseries(
     out_dir: Path,
     prefix: str = "18_portfolio_timeseries",
     title_suffix: str = "",
+    *,
+    book_label: str = "Portfolio",
+    show_instrument_split: bool = False,
 ) -> Path | None:
-    """Gross-long FIFO portfolio: MTM exposure and cumulative PnL over time."""
+    """FIFO portfolio: MTM notional (top) and cumulative PnL (bottom)."""
     if daily.empty:
         return None
 
@@ -937,9 +1034,9 @@ def plot_portfolio_daily_timeseries(
     cost_m = df["position_cost"] / 1e6
     mtm_m = df["position_mtm"] / 1e6
     ax0.fill_between(df["date"], 0, mtm_m, alpha=0.18, color="#8e44ad")
-    ax0.plot(df["date"], mtm_m, color="#8e44ad", lw=2.0, label="MTM value")
+    ax0.plot(df["date"], mtm_m, color="#8e44ad", lw=2.0, label="Portfolio MTM (FIFO)")
     ax0.plot(df["date"], cost_m, color="#566573", lw=1.4, ls="--", label="Cost basis")
-    if "position_mtm_stock" in df.columns and "position_mtm_option" in df.columns:
+    if show_instrument_split and "position_mtm_stock" in df.columns and "position_mtm_option" in df.columns:
         ax0.plot(
             df["date"],
             df["position_mtm_stock"] / 1e6,
@@ -956,16 +1053,16 @@ def plot_portfolio_daily_timeseries(
             alpha=0.85,
             label="MTM option/exercise lots",
         )
-    ax0.set_ylabel("Position size ($M)")
-    ax0.set_title(f"Gross-long portfolio size (FIFO, EOD){title_suffix}")
+    ax0.set_ylabel("Portfolio notional ($M)")
+    ax0.set_title(f"{book_label} — position notional (FIFO, EOD){title_suffix}")
     ax0.legend(loc="upper left", fontsize=9)
     ax0.grid(True, alpha=0.3)
 
     ax1 = axes[1]
     pnl = df["cum_pnl"]
     scale = 1e6 if pnl.abs().max() >= 5e5 else 1e3
-    ylab = "Cumulative PnL ($M)" if scale == 1e6 else "Cumulative PnL ($K)"
-    ax1.plot(df["date"], pnl / scale, color="#1e4d8c", lw=2.0, label="Cumulative PnL")
+    ylab = "Accumulated PnL ($M)" if scale == 1e6 else "Accumulated PnL ($K)"
+    ax1.plot(df["date"], pnl / scale, color="#1e4d8c", lw=2.0, label="Accumulated PnL")
     ax1.fill_between(
         df["date"],
         0,
@@ -987,7 +1084,7 @@ def plot_portfolio_daily_timeseries(
     ax1.axhline(0, color="gray", lw=0.8)
     ax1.set_ylabel(ylab)
     ax1.set_xlabel("Date")
-    ax1.set_title("Portfolio cumulative PnL (sum of daily MTM changes)")
+    ax1.set_title(f"{book_label} — accumulated PnL (FIFO realized + unrealized)")
     ax1.legend(loc="upper left", fontsize=9)
     ax1.grid(True, alpha=0.3)
 
@@ -996,7 +1093,7 @@ def plot_portfolio_daily_timeseries(
             label.set_rotation(45)
             label.set_ha("right")
 
-    main_title = "Portfolio — Position Size & Cumulative PnL" + title_suffix
+    main_title = f"Pelosi — {book_label}" + title_suffix
     fig.suptitle(main_title, fontsize=12, y=1.01)
     fig.tight_layout()
     return _save(fig, out_dir, prefix)
@@ -1048,20 +1145,43 @@ def generate_all_charts(
     option_return_analysis: dict | None = None,
     combined_return_analysis: dict | None = None,
     unified_portfolio_daily: pd.DataFrame | None = None,
+    options_portfolio_daily: pd.DataFrame | None = None,
     price_cache: dict[str, pd.DataFrame] | None = None,
     ticker_daily_pnl: pd.DataFrame | None = None,
-    pnl_daily_for_accum: pd.DataFrame | None = None,
 ) -> list[Path]:
     _remove_legacy_trump_charts(out_dir)
     pelosi_df = _timing_returns(return_analysis)
+    opt_timing = None
+    if option_return_analysis:
+        opt_timing = option_return_analysis.get("pelosi_timing")
     if options_trades is not None and not options_trades.empty:
         buy_sell_chart = plot_combined_buy_sell(
             trades, options_trades, out_dir, price_cache=price_cache
         )
     else:
         buy_sell_chart = plot_buy_sell(trades, out_dir)
-    paths = [
-        plot_trade_volume_monthly(trades, out_dir, pelosi_df=pelosi_df),
+    paths: list[Path] = []
+    tv_stock = plot_trade_volume_monthly(
+        trades,
+        out_dir,
+        pelosi_df=pelosi_df,
+        prefix="01_monthly_volume",
+        segment_label="Stock/ETF",
+    )
+    if tv_stock:
+        paths.append(tv_stock)
+    if options_trades is not None and not options_trades.empty:
+        tv_opt = plot_trade_volume_monthly(
+            options_trades,
+            out_dir,
+            pelosi_df=opt_timing,
+            prefix="01_monthly_volume_options",
+            segment_label="Options",
+            price_cache=price_cache,
+        )
+        if tv_opt:
+            paths.append(tv_opt)
+    paths += [
         plot_reveal_lag(returns_df, out_dir),
         plot_top_tickers(trades, out_dir, returns_df=pelosi_df),
         buy_sell_chart,
@@ -1070,34 +1190,38 @@ def generate_all_charts(
         oh = plot_open_holdings_snapshot(open_holdings, out_dir)
         if oh:
             paths.append(oh)
-    if portfolio_daily is not None and not portfolio_daily.empty:
-        pt = plot_portfolio_daily_timeseries(portfolio_daily, out_dir)
-        if pt:
-            paths.append(pt)
     if unified_portfolio_daily is not None and not unified_portfolio_daily.empty:
         up = plot_portfolio_daily_timeseries(
             unified_portfolio_daily,
             out_dir,
-            prefix="19_unified_portfolio_timeseries",
-            title_suffix=" · stock+options FIFO",
+            prefix="18_portfolio_timeseries",
+            book_label="Stock + options (unified FIFO)",
+            show_instrument_split=True,
         )
         if up:
             paths.append(up)
-    accum_src = pnl_daily_for_accum
-    if accum_src is None or accum_src.empty:
-        accum_src = (
-            unified_portfolio_daily
-            if unified_portfolio_daily is not None and not unified_portfolio_daily.empty
-            else portfolio_daily
-        )
-    if accum_src is not None and not accum_src.empty:
-        acc = plot_daily_accumulated_pnl(
-            accum_src,
+    if portfolio_daily is not None and not portfolio_daily.empty:
+        ps = plot_portfolio_daily_timeseries(
+            portfolio_daily,
             out_dir,
-            "Portfolio — daily accumulated PnL (FIFO MTM, through analysis end)",
+            prefix="18_portfolio_timeseries_stock",
+            book_label="Stock only (FIFO)",
         )
-        if acc:
-            paths.append(acc)
+        if ps:
+            paths.append(ps)
+    if options_portfolio_daily is not None and not options_portfolio_daily.empty:
+        po = plot_portfolio_daily_timeseries(
+            options_portfolio_daily,
+            out_dir,
+            prefix="18_portfolio_timeseries_options",
+            book_label="Options only (FIFO, 100 sh/contract)",
+        )
+        if po:
+            paths.append(po)
+    elif not unified_portfolio_daily and portfolio_daily is not None and not portfolio_daily.empty:
+        pt = plot_portfolio_daily_timeseries(portfolio_daily, out_dir, book_label="Stock only (FIFO)")
+        if pt:
+            paths.append(pt)
     if ticker_daily_pnl is not None and not ticker_daily_pnl.empty:
         mo = plot_monthly_pnl_top3_bars(
             ticker_daily_pnl,
