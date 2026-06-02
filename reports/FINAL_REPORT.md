@@ -1,6 +1,6 @@
 # Pelosi 股票/ETF 交易分析报告
 
-> 生成时间: 2026-06-02 09:16 · House STOCK Act PTR · 2023-03-09 起
+> 生成时间: 2026-06-02 21:37 · House STOCK Act PTR · 2023-03-09 起
 
 ## 数据范围
 
@@ -59,7 +59,6 @@
 
 - **金额缺失**：仍有 **10** 笔股票无 `amount_min`，不进 NW 表（期权可无 PTR 金额仍靠张数×价计价）。
 - **合并账**：同一标的上股票与期权/行权各算一笔独立 timing PnL，**未**去重净敞口。
-- **附录回测**：`trades_analysis` / 等权披露日回测含 **全部有 ticker 笔**（可无金额），与主表 NW 笔数不同。
 
 
 <figure class="report-fig">
@@ -124,18 +123,6 @@ Horizon 收益以 **最早一笔未平买入** 的 anchor 日计（合并账用 
 <figure class="report-fig">
 <img src="figures/18_portfolio_timeseries.png" alt="组合持仓规模与累计 PnL 随时间变化（仅股票 FIFO 日度）">
 <figcaption>组合持仓规模与累计 PnL 随时间变化（仅股票 FIFO 日度）</figcaption>
-</figure>
-
-
-<figure class="report-fig">
-<img src="figures/20_daily_accumulated_pnl.png" alt="每个交易日累计 PnL（FIFO 盯市，直至分析截止日）">
-<figcaption>每个交易日累计 PnL（FIFO 盯市，直至分析截止日）</figcaption>
-</figure>
-
-
-<figure class="report-fig">
-<img src="figures/21_daily_pnl_top3_stack.png" alt="每日 PnL 贡献：当日 |PnL| 前三标的 + 其他">
-<figcaption>每日 PnL 贡献：当日 |PnL| 前三标的 + 其他</figcaption>
 </figure>
 
 
@@ -400,38 +387,6 @@ Combined book: stock notional = PTR amount_min; option notional = n_contracts ×
 <figure class="report-fig">
 <img src="figures/13_follow_cumulative_pnl.png" alt="Follow 披露日：累计 PnL">
 <figcaption>Follow 披露日：累计 PnL</figcaption>
-</figure>
-
-## 附录：旧版等权披露日回测（参考）
-
-> **口径**：本附录基于 **全部有 ticker 股票**（约 **33** 笔），**不要求** `amount_min`；主文 NW 表仅 **23** 笔有金额。两者 **不可** 与 §1 timing NW 直接对比。
-
-- Reveal lag 中位: **7** 天
-- 等权按披露日复利 (+1td only): **19.47%**
-- 胜率 (+1td): **51.5%**
-
-
-<figure class="report-fig">
-<img src="figures/02_reveal_lag.png" alt="披露滞后（交易日 → 披露日）">
-<figcaption>披露滞后（交易日 → 披露日）</figcaption>
-</figure>
-
-
-<figure class="report-fig">
-<img src="figures/06_backtest_cum.png" alt="Legacy：等权披露日回测累计收益">
-<figcaption>Legacy：等权披露日回测累计收益</figcaption>
-</figure>
-
-
-<figure class="report-fig">
-<img src="figures/05_post_returns.png" alt="Legacy：披露后收益分布">
-<figcaption>Legacy：披露后收益分布</figcaption>
-</figure>
-
-
-<figure class="report-fig">
-<img src="figures/07_event_study.png" alt="事件研究：披露日 abnormal return">
-<figcaption>事件研究：披露日 abnormal return</figcaption>
 </figure>
 
 ## Top Tickers（按 Pelosi 名义金额 `amount_min` 合计）

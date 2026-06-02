@@ -216,8 +216,6 @@ _FIGURE_CAPTIONS: dict[str, str] = {
     "17_open_holdings": "当前净多头 Top10：名义 + 买入后 horizon 收益",
     "18_portfolio_timeseries": "组合持仓规模与累计 PnL 随时间变化（仅股票 FIFO 日度）",
     "19_unified_portfolio_timeseries": "统一 FIFO（股票+期权/行权）：仓位与累计 PnL 随时间",
-    "20_daily_accumulated_pnl": "每个交易日累计 PnL（FIFO 盯市，直至分析截止日）",
-    "21_daily_pnl_top3_stack": "每日 PnL 贡献：当日 |PnL| 前三标的 + 其他",
     "06_backtest_cum": "Legacy：等权披露日回测累计收益",
     "07_event_study": "事件研究：披露日 abnormal return",
     "08_disclosure_timeline": "披露日批次：披露名义总额 + 笔数",
@@ -536,7 +534,6 @@ def _methodology_notion_section(summary: dict) -> list[str]:
         "",
         f"- **金额缺失**：仍有 **{n_miss}** 笔股票无 `amount_min`，不进 NW 表（期权可无 PTR 金额仍靠张数×价计价）。",
         "- **合并账**：同一标的上股票与期权/行权各算一笔独立 timing PnL，**未**去重净敞口。",
-        "- **附录回测**：`trades_analysis` / 等权披露日回测含 **全部有 ticker 笔**（可无金额），与主表 NW 笔数不同。",
         "",
     ]
 
@@ -688,8 +685,6 @@ def _md_report(
     chart_paths: list[Path],
     filing_stats: dict[str, dict],
 ) -> str:
-    bt = summary.get("backtest_metrics", {})
-    port_ret = bt.get("portfolio_return_equal_weight", bt.get("total_return", 0))
     n = summary.get("total_rows_parsed", 0)
     n_trad = summary.get("tradable_with_ticker", 0)
     n_eq = summary.get("tradable_equity_etf", n_trad)
@@ -743,8 +738,6 @@ def _md_report(
     lines += fig("17_open_holdings")
     lines += _portfolio_daily_section(summary)
     lines += fig("18_portfolio_timeseries")
-    lines += fig("20_daily_accumulated_pnl")
-    lines += fig("21_daily_pnl_top3_stack")
     lines += _unified_portfolio_section(summary, fig)
     lines += [
         "",
@@ -984,22 +977,6 @@ def _md_report(
     ]
     lines += fig("14_follow_buy_vs_sell")
     lines += fig("13_follow_cumulative_pnl")
-    n_nw = summary.get("tradable_with_notional", summary.get("tradable_with_ticker", 0))
-    lines += [
-        "## 附录：旧版等权披露日回测（参考）",
-        "",
-        f"> **口径**：本附录基于 **全部有 ticker 股票**（约 **{n_trad}** 笔），**不要求** `amount_min`；"
-        f"主文 NW 表仅 **{n_nw}** 笔有金额。两者 **不可** 与 §1 timing NW 直接对比。",
-        "",
-        f"- Reveal lag 中位: **{summary.get('median_reveal_lag_days', 0):.0f}** 天",
-        f"- 等权按披露日复利 (+1td only): **{port_ret:.2%}**",
-        f"- 胜率 (+1td): **{bt.get('win_rate', 0):.1%}**",
-        "",
-    ]
-    lines += fig("02_reveal_lag")
-    lines += fig("06_backtest_cum")
-    lines += fig("05_post_returns")
-    lines += fig("07_event_study")
     lines += [
         "## Top Tickers（按 Pelosi 名义金额 `amount_min` 合计）",
         "",
@@ -1034,7 +1011,6 @@ def _pdf_report(
     out_path: Path,
     filing_stats: dict[str, dict],
 ) -> None:
-    bt = summary.get("backtest_metrics", {})
     dr = summary.get("date_range", ["?", "?"])
     tot_notional_eq = sum(s["notional_equity_etf"] for s in filing_stats.values())
     text_lines = [
@@ -1057,14 +1033,6 @@ def _pdf_report(
         text_lines.append(
             f"Pelosi NW +1d: {top.get('notional_weighted_return', 0):.2%} ({top.get('n_trades', 0)} trades)"
         )
-    text_lines += [
-        "",
-        "Appendix — legacy equal-weight backtest:",
-        f"  Median reveal lag: {summary.get('median_reveal_lag_days', 0):.0f} days",
-        f"  Portfolio return: {bt.get('portfolio_return_equal_weight', 0):.2%}",
-        f"  Win rate: {bt.get('win_rate', 0):.1%}",
-        f"  Disclosure days: {bt.get('n_disclosure_days', 0)}",
-    ]
     hs = summary.get("holding_stats") or {}
     if hs:
         text_lines += [
