@@ -1313,13 +1313,13 @@ _HTML_MOBILE_SCRIPT = """
   btn.addEventListener('click', function () {
     var open = nav.classList.toggle('is-open');
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    btn.textContent = open ? '收起目录 ▴' : '展开目录 ▾';
+    btn.textContent = open ? (window.t ? window.t('收起目录 ▴') : '收起目录 ▴') : (window.t ? window.t('展开目录 ▾') : '展开目录 ▾');
   });
   document.querySelectorAll('.nav-links a').forEach(function (a) {
     a.addEventListener('click', function () {
       nav.classList.remove('is-open');
       btn.setAttribute('aria-expanded', 'false');
-      btn.textContent = '展开目录 ▾';
+      btn.textContent = window.t ? window.t('展开目录 ▾') : '展开目录 ▾';
     });
   });
 })();
@@ -1459,6 +1459,13 @@ def _html_report(
   <style>{_HTML_STYLES}</style>
 </head>
 <body>
+<style>
+.lang-bar{{position:sticky;top:0;z-index:300;display:flex;justify-content:flex-end;align-items:center;padding:10px 16px;background:#1e4d8c;color:#fff}}
+.lang-switch{{display:inline-flex;padding:4px;gap:2px;border-radius:999px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.55);box-shadow:0 6px 18px rgba(0,0,0,.2)}}
+.lang-switch button{{border:0;background:transparent;color:#fff;font-weight:800;font-size:.95rem;padding:8px 18px;min-width:72px;border-radius:999px;cursor:pointer}}
+.lang-switch button.active{{background:#fff;color:#1e4d8c}}
+</style>
+<div class="lang-bar"><div class="lang-switch" role="group" aria-label="Language"><button type="button" data-set-lang="zh" onclick="setDashLang('zh')">中文</button><button type="button" data-set-lang="en" onclick="setDashLang('en')">EN</button></div></div>
   <div class="page">
     <article>
 {nav_html}
@@ -1467,6 +1474,7 @@ def _html_report(
     </article>
   </div>
   <script>{_HTML_MOBILE_SCRIPT}</script>
+  <script src="lang.js"></script>
 </body>
 </html>
 """
