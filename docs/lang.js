@@ -99,7 +99,104 @@
     "Δ天": "Δ days",
     "发帖-买(d)": "Post − buy (d)",
     "NW 收益率": "NW return",
+    "生成时间: 2026-06-02 22:31 · OGE Form 278-T · 第二任期上任以来": "Generated 2026-06-02 22:31 · OGE Form 278-T · since the second term began",
+    "生成时间: 2026-06-02 23:38 · House STOCK Act PTR · 2023-03-09 起": "Generated 2026-06-02 23:38 · House STOCK Act PTR · from 2023-03-09",
+    "分析区间": "Period",
+    "278-T 文件数": "278-T filings",
+    "House PTR 文件数": "House PTR filings",
+    ": 6 份（有效 5）": ": 6 filings (5 usable)",
+    ": 15 份（有效 15）": ": 15 filings (15 usable)",
+    "股票/ETF 可交易笔数": "Tradable stock/ETF trades",
+    "只 ticker）": "tickers)",
+    "求和）": "sum of floors)",
+    "求和，仅有金额行）": "sum of floors, rows with amounts only)",
+    "全部解析行": "All parsed rows",
+    "（含债券等；全文件名义合计约": "(including bonds; filing notional about",
+    "表格解析率": "Table parse rate",
+    "天": "days",
+    "笔": "trades",
+    "条": "items",
+    "仍持有": "still held",
+    "买入": "Buy",
+    "卖出": "Sell",
+    "合计": "Total",
+    "交易发生日": "trade date",
+    "先进先出": "first in, first out",
+    "完整数据:": "Full data:",
+    "（暂无数据）": "(no data)",
+    "有 ticker（可交易）": "Rows with a ticker (tradable)",
+    "可算 NW 收益（有": "Rows with a notional-weighted return (",
+    "（另有": "(another",
+    "笔因金额缺失未进入 horizon 表）": "trades lack an amount and are left out of the horizon table)",
+    "买卖结构（股票 + 期权原始行；买入含": "Buy/sell mix (raw stock + option rows; buys include",
+    "；名义：股票=PTR 下限，期权=张数×100×行权价或 PTR 下限）": "; notional: stock = PTR floor, options = contracts×100×strike or the PTR floor)",
+    "类别": "Category",
+    "名义合计": "Total notional",
+    "占名义比例": "Share of notional",
+    "股票买入": "Stock buys",
+    "股票卖出": "Stock sells",
+    "期权买入/行权": "Option buys / exercises",
+    "期权卖出": "Option sells",
+    "股票": "Stock",
+    "期权": "Options",
+    "本报告并行使用": "This report uses, side by side,",
+    "三套名义": "three notionals",
+    "两套 FIFO / MTM": "two FIFO / mark-to-market books",
+    "，请勿混读数字：": ". Do not mix the figures:",
+    "名义类型": "Notional type",
+    "定义": "Definition",
+    "用于": "Used for",
+    "经济名义": "Economic notional",
+    "合并账": "Combined book",
+    "统一 FIFO": "Unified FIFO",
+    "金额缺失": "Missing amounts",
+    "未": "not",
+    "去重净敞口。": "netted into one exposure.",
+    "仍持有": "still held",
+    "净名义不是精确市值": "Net notional is not a precise market value",
+    "张数×100 股": "contracts × 100 shares",
+    "买入 call": "Buy call",
+    "卖出 call": "Sell call",
+    "买入 put": "Buy put",
+    "卖出 put": "Sell put",
+    "行权": "Exercise",
+    "100 股/张": "100 shares/contract",
+    "其中：股票": "Of which: stock",
+    "其中：期权（标的价 × 100 股/张名义）": "Of which: options (underlying × 100 shares)",
+    "合计（股票 + 期权）": "Total (stock + options)",
+    "1. Pelosi 自身交易 timing（锚点 =": "1. Pelosi's own timing (anchor =",
+    "2. Follow Pelosi（锚点 =": "2. Follow Pelosi (anchor =",
+    "PTR 披露日": "PTR disclosure date",
+    "标的": "Underlying",
+    "行权价": "Strike",
+    "到期": "Expiry",
+    "张数": "Contracts",
+    "House Clerk 官方 PTR: ✅": "Official House Clerk PTR: ✅",
+    "PTR PDF 校验: ✅": "PTR PDF check: ✅",
+    "数据来源为": "Source:",
+    "），非总统 OGE Form 278-T。": "), not presidential OGE Form 278-T.",
+    "「名义与口径」": "“Notional and definitions”",
+    "图表已内嵌为本页数据，可直接用浏览器打开本地 HTML（无需": "Charts are embedded in this page, so the HTML opens locally with no",
+    "子目录）。 手机/微信可发": "folder). On a phone or WeChat, send",
+    "或 GitHub Pages：": "or the GitHub Pages link:",
+    "成功配对:": "Matched lots:",
+    "对，涉及": "lots across",
+    "个 ticker": "tickers",
+    "持仓中位:": "Median hold:",
+    "天，均值:": "days, mean:",
+    "规则: 同 ticker 按日期排序，": "Rule: same ticker, sorted by date,",
+    "FIFO 持仓天数分布": "FIFO holding-period distribution",
+    "已纳入文件（逐份统计）": "Included filings",
+    "样本交易日:": "Sample days:",
+    "截止": "As of",
+    "基于": "Based on",
+    "按": "Using",
+    "下限": "floor",
+    "来源": "Source",
+    "或": "or",
+    "非": "not",
   };
+  if (window.DASH_EXTRA) Object.assign(DICT, window.DASH_EXTRA);
 
   window.DASH_LANG = localStorage.getItem("dash-lang") === "en" ? "en" : "zh";
   window.t = function (s) {
@@ -114,7 +211,15 @@
     if (Object.prototype.hasOwnProperty.call(DICT, s)) return DICT[s];
     const c = canon(s);
     const hit = Object.keys(DICT).find((k) => canon(k) === c);
-    return hit ? DICT[hit] : null;
+    if (hit) return DICT[hit];
+    if (!/[\u4e00-\u9fff]/.test(s)) return null;
+    const keys = Object.keys(DICT).filter((k) => /[\u4e00-\u9fff]/.test(k) && k.length >= 2);
+    keys.sort((a, b) => b.length - a.length);
+    let next = s;
+    keys.forEach((k) => {
+      if (next.includes(k)) next = next.split(k).join(DICT[k]);
+    });
+    return next !== s ? next : null;
   }
   function translate(node) {
     const parent = node.parentElement;
@@ -140,6 +245,11 @@
       if (!title.dataset.zh) title.dataset.zh = title.textContent;
       title.textContent = window.DASH_LANG === "en" ? window.t(title.dataset.zh) : title.dataset.zh;
     }
+    document.querySelectorAll("[aria-label]").forEach((el) => {
+      if (!el.dataset.ariaZh) el.dataset.ariaZh = el.getAttribute("aria-label");
+      const src = el.dataset.ariaZh;
+      el.setAttribute("aria-label", window.DASH_LANG === "en" ? (window.t(src) || src) : src);
+    });
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);

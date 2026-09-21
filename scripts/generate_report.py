@@ -1474,6 +1474,8 @@ def _html_report(
     </article>
   </div>
   <script>{_HTML_MOBILE_SCRIPT}</script>
+  <script src="lang_extra.js"></script>
+  <script src="lang_more.js"></script>
   <script src="lang.js"></script>
 </body>
 </html>
