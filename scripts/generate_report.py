@@ -1348,13 +1348,14 @@ def _add_section_ids_and_toc(html: str) -> tuple[str, str]:
     return html, links
 
 
-# Wide charts with small text: embed at higher pixel width + quality (default 900px blurs labels).
+# Wide charts with small text: embed at higher pixel width + quality.
 _EMBED_FIGURE_PROFILES: dict[str, dict[str, int | str]] = {
     "01_monthly_volume.png": {"max_w": 3600, "quality": 95, "format": "jpeg"},
     "01_monthly_volume_options.png": {"max_w": 3600, "quality": 95, "format": "jpeg"},
     "18_portfolio_timeseries.png": {"max_w": 2400, "quality": 92, "format": "jpeg"},
     "18_portfolio_timeseries_stock.png": {"max_w": 2400, "quality": 92, "format": "jpeg"},
     "18_portfolio_timeseries_options.png": {"max_w": 2400, "quality": 92, "format": "jpeg"},
+    "19_unified_portfolio_timeseries.png": {"max_w": 2400, "quality": 92, "format": "jpeg"},
     "21_monthly_pnl_top3_bars.png": {"max_w": 3600, "quality": 95, "format": "jpeg"},
 }
 
@@ -1371,8 +1372,8 @@ def _embed_figure_src(html: str, figures_dir: Path, *, compress: bool = True) ->
             from PIL import Image
 
             profile = _EMBED_FIGURE_PROFILES.get(fname, {})
-            max_w = int(profile.get("max_w", 900))
-            quality = int(profile.get("quality", 72))
+            max_w = int(profile.get("max_w", 1800))
+            quality = int(profile.get("quality", 90))
             fmt = str(profile.get("format", "jpeg")).lower()
 
             with Image.open(path) as img:

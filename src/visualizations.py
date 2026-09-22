@@ -14,7 +14,7 @@ from .instrument_notional import BUY_ACTIONS, economic_notional, is_option_row, 
 from .prices import price_on_date
 
 sns.set_theme(style="whitegrid", palette="muted")
-plt.rcParams.update({"figure.dpi": 120, "savefig.dpi": 150, "font.size": 10})
+plt.rcParams.update({"figure.dpi": 140, "savefig.dpi": 220, "font.size": 10})
 
 
 def _setup_matplotlib_fonts() -> None:
@@ -995,7 +995,7 @@ def plot_monthly_pnl_top3_bars(
         if vo != 0:
             ax.bar(i, vo, bar_w, bottom=btm, color=colors[3], edgecolor="white", linewidth=0.5)
             _annotate_bar_segment(
-                ax, i, btm, vo, "其他", text_color="#4a5568", min_height=min_seg, fontsize=seg_fs
+                ax, i, btm, vo, "Other", text_color="#4a5568", min_height=min_seg, fontsize=seg_fs
             )
 
     ax.axhline(0, color="gray", lw=0.8)
@@ -1226,7 +1226,7 @@ def generate_all_charts(
         mo = plot_monthly_pnl_top3_bars(
             ticker_daily_pnl,
             out_dir,
-            "Monthly PnL (2024→) — top 3 tickers by |PnL| + 其他 (FIFO daily sum)",
+            "Monthly PnL (2024→) — top 3 tickers by |PnL| + Other (FIFO daily sum)",
         )
         if mo:
             paths.append(mo)
